@@ -9,6 +9,7 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ToastContainer } from '@/components/common/Toast';
 import { useAuthStore } from '@/stores/authStore';
+import { useSync } from '@/hooks/useSync';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { migrateDatabase } from '@/lib/database';
 import { DB_NAME } from '@/constants/config';
@@ -16,8 +17,14 @@ import { DB_NAME } from '@/constants/config';
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
+  const initialize = useAuthStore((s) => s.initialize);
   const segments = useSegments();
   const router = useRouter();
+
+  // Supabase session check + onAuthStateChange listener
+  useEffect(() => {
+    initialize();
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
@@ -34,6 +41,30 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   if (isLoading) return <LoadingSpinner fullScreen />;
 
   return <>{children}</>;
+}
+
+function SyncManager() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const { sync } = useSync();
+
+  // Sync when auth state is ready, with delayed retry for session restoration
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      console.log('[SyncManager] Auth ready, triggering sync...');
+      sync();
+
+      // Retry after 3s in case Supabase session wasn't restored yet
+      const retryTimer = setTimeout(() => {
+        console.log('[SyncManager] Retry sync (session may be ready now)');
+        sync();
+      }, 3000);
+
+      return () => clearTimeout(retryTimer);
+    }
+  }, [isAuthenticated, isLoading]);
+
+  return null;
 }
 
 export default function RootLayout() {
@@ -70,6 +101,7 @@ export default function RootLayout() {
                 />
               </Stack>
             </AuthGuard>
+            <SyncManager />
             <ToastContainer />
           </SQLiteProvider>
         </Suspense>
