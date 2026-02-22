@@ -31,6 +31,14 @@ export async function processSyncQueue(db: SQLiteDatabase): Promise<{
     return { processed: 0, failed: 0, conflicts: 0 };
   }
 
+  // Verify we have a valid Supabase auth session before attempting any sync
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    console.log('[Sync] No valid Supabase session yet, skipping sync');
+    return { processed: 0, failed: 0, conflicts: 0 };
+  }
+  console.log('[Sync] Session verified, auth_uid:', session.user.id);
+
   const queue = await getSyncQueue(db);
   let processed = 0;
   let failed = 0;
@@ -46,12 +54,12 @@ export async function processSyncQueue(db: SQLiteDatabase): Promise<{
         await removeSyncQueueItem(db, item.id);
         conflicts++;
       }
-    } catch {
+    } catch (err) {
+      console.warn(`[Sync] Failed to process item ${item.id}:`, err);
       await incrementSyncRetry(db, item.id);
       failed++;
 
       if (item.retry_count + 1 >= item.max_retries) {
-        // Dead letter — item stays in queue but won't be retried
         console.warn(`[Sync] Item ${item.id} reached max retries`);
       }
     }
@@ -66,8 +74,24 @@ async function processQueueItem(
 ): Promise<'success' | 'conflict'> {
   const data = JSON.parse(item.data) as Record<string, unknown>;
 
+  // Debug: log auth state and data being synced
+  const { data: { session } } = await supabase.auth.getSession();
+  console.log(`[Sync] Processing ${item.table_name} ${item.operation}`, {
+    auth_uid: session?.user?.id ?? 'NO SESSION',
+    data_user_id: data.user_id ?? 'N/A',
+    record_id: data.id ?? data.habit_id ?? 'unknown',
+    retry: item.retry_count,
+  });
+
+  // CRITICAL: Override local user_id with current Supabase auth uid
+  // Local SQLite may have a different user_id (from initial signup or guest mode)
+  // RLS policy requires auth.uid() = user_id, so we must align them
+  if (session?.user?.id && data.user_id && data.user_id !== session.user.id) {
+    console.log(`[Sync] Rewriting user_id: ${data.user_id} → ${session.user.id}`);
+    data.user_id = session.user.id;
+  }
+
   if (item.table_name === 'completions') {
-    // Completions use idempotent upsert — no conflicts possible
     return processCompletionSync(item, data);
   }
 
@@ -87,11 +111,18 @@ async function processCompletionSync(
   data: Record<string, unknown>
 ): Promise<'success'> {
   if (item.operation === 'DELETE') {
-    await supabase.from('completions').delete().eq('id', data.id);
+    const { error } = await supabase
+      .from('completions')
+      .delete()
+      .eq('id', data.id);
+    if (error && !error.message.includes('0 rows')) {
+      throw new SyncError(`completions DELETE: ${error.message}`);
+    }
   } else {
-    await supabase.from('completions').upsert(data, {
+    const { error } = await supabase.from('completions').upsert(data, {
       onConflict: 'habit_id,completed_date',
     });
+    if (error) throw new SyncError(`completions UPSERT: ${error.message}`);
   }
   return 'success';
 }
@@ -103,25 +134,48 @@ async function processHabitSync(
 ): Promise<'success' | 'conflict'> {
   if (item.operation === 'INSERT') {
     const { error } = await supabase.from('habits').insert(data);
-    if (error) throw new SyncError(error.message);
+    if (error) {
+      if (error.code === '23505') {
+        const { error: upsertErr } = await supabase
+          .from('habits')
+          .upsert(data);
+        if (upsertErr) throw new SyncError(`habits INSERT fallback: ${upsertErr.message}`);
+        return 'success';
+      }
+      throw new SyncError(`habits INSERT: ${error.message}`);
+    }
     return 'success';
   }
 
   if (item.operation === 'DELETE') {
-    await supabase.from('habits').delete().eq('id', data.id);
+    const { error } = await supabase
+      .from('habits')
+      .delete()
+      .eq('id', data.id);
+    if (error && !error.message.includes('0 rows')) {
+      throw new SyncError(`habits DELETE: ${error.message}`);
+    }
     return 'success';
   }
 
-  // UPDATE — check version for conflict detection
+  // UPDATE — version conflict detection
   const localVersion = (data.version as number) ?? 1;
-  const { data: remote } = await supabase
+  const { data: remote, error: fetchErr } = await supabase
     .from('habits')
     .select('version')
     .eq('id', data.id)
     .single();
 
+  if (fetchErr) {
+    if (fetchErr.code === 'PGRST116') {
+      const { error: insertErr } = await supabase.from('habits').insert(data);
+      if (insertErr) throw new SyncError(`habits UPDATE->INSERT fallback: ${insertErr.message}`);
+      return 'success';
+    }
+    throw new SyncError(`habits UPDATE fetch: ${fetchErr.message}`);
+  }
+
   if (remote && remote.version > localVersion - 1) {
-    // Conflict: remote was modified by another device
     const { data: remoteData } = await supabase
       .from('habits')
       .select('*')
@@ -140,12 +194,12 @@ async function processHabitSync(
     return 'conflict';
   }
 
-  const { error } = await supabase
+  const { error: updateErr } = await supabase
     .from('habits')
     .update(data)
     .eq('id', data.id);
 
-  if (error) throw new SyncError(error.message);
+  if (updateErr) throw new SyncError(`habits UPDATE: ${updateErr.message}`);
   return 'success';
 }
 
@@ -154,17 +208,26 @@ async function processStreakSync(
   data: Record<string, unknown>
 ): Promise<'success'> {
   if (item.operation === 'DELETE') {
-    await supabase.from('streaks').delete().eq('habit_id', data.habit_id);
+    const { error } = await supabase
+      .from('streaks')
+      .delete()
+      .eq('habit_id', data.habit_id);
+    if (error && !error.message.includes('0 rows')) {
+      throw new SyncError(`streaks DELETE: ${error.message}`);
+    }
   } else {
-    await supabase.from('streaks').upsert(data, {
+    const { error } = await supabase.from('streaks').upsert(data, {
       onConflict: 'habit_id',
     });
+    if (error) throw new SyncError(`streaks UPSERT: ${error.message}`);
   }
   return 'success';
 }
 
 export function getBackoffDelay(retryCount: number): number {
-  return SYNC_BACKOFF_BASE_MS * Math.pow(2, retryCount);
+  const baseDelay = SYNC_BACKOFF_BASE_MS * Math.pow(2, retryCount);
+  const jitter = Math.random() * baseDelay * 0.5;
+  return baseDelay + jitter;
 }
 
 function generateUUID(): string {

@@ -9,6 +9,7 @@ import type {
   StreakRow,
   HabitCategory,
   HabitFrequency,
+  SyncOperation,
 } from '@/types';
 import { DB_VERSION } from '@/constants/config';
 
@@ -93,6 +94,26 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
   await db.execAsync(`PRAGMA user_version = ${DB_VERSION}`);
 }
 
+// ─── Sync Queue Helper ─────────────────────────────────
+// Non-fatal: enqueue failure only warns. Never blocks local ops.
+
+async function enqueueSync(
+  db: SQLiteDatabase,
+  tableName: 'habits' | 'completions' | 'streaks',
+  operation: SyncOperation,
+  data: Record<string, unknown>
+): Promise<void> {
+  try {
+    const id = generateId();
+    await db.runAsync(
+      'INSERT INTO sync_queue (id, table_name, operation, data) VALUES (?, ?, ?, ?)',
+      [id, tableName, operation, JSON.stringify(data)]
+    );
+  } catch (err) {
+    console.warn(`[Sync] enqueue failed for ${tableName}/${operation}:`, err);
+  }
+}
+
 // ─── Row → Model Mappers ───────────────────────────────
 
 function rowToHabit(row: HabitRow): Habit {
@@ -171,6 +192,31 @@ export async function createHabit(
     [id]
   );
 
+  await enqueueSync(db, 'habits', 'INSERT', {
+    id,
+    user_id: habit.user_id,
+    name: habit.name,
+    description: habit.description,
+    icon: habit.icon,
+    color: habit.color,
+    category: habit.category,
+    frequency: habit.frequency,
+    target_days: habit.target_days,
+    reminder_time: habit.reminder_time,
+    reminder_enabled: habit.reminder_enabled,
+    is_archived: habit.is_archived,
+    sort_order: habit.sort_order,
+    device_id: habit.device_id,
+    version: 1,
+  });
+
+  await enqueueSync(db, 'streaks', 'INSERT', {
+    habit_id: id,
+    current_streak: 0,
+    longest_streak: 0,
+    last_completed_date: null,
+  });
+
   return id;
 }
 
@@ -181,18 +227,19 @@ export async function updateHabit(
 ): Promise<void> {
   const setClauses: string[] = [];
   const values: unknown[] = [];
+  const syncData: Record<string, unknown> = { id };
 
-  if (updates.name !== undefined) { setClauses.push('name = ?'); values.push(updates.name); }
-  if (updates.description !== undefined) { setClauses.push('description = ?'); values.push(updates.description); }
-  if (updates.icon !== undefined) { setClauses.push('icon = ?'); values.push(updates.icon); }
-  if (updates.color !== undefined) { setClauses.push('color = ?'); values.push(updates.color); }
-  if (updates.category !== undefined) { setClauses.push('category = ?'); values.push(updates.category); }
-  if (updates.frequency !== undefined) { setClauses.push('frequency = ?'); values.push(updates.frequency); }
-  if (updates.target_days !== undefined) { setClauses.push('target_days = ?'); values.push(JSON.stringify(updates.target_days)); }
-  if (updates.reminder_time !== undefined) { setClauses.push('reminder_time = ?'); values.push(updates.reminder_time); }
-  if (updates.reminder_enabled !== undefined) { setClauses.push('reminder_enabled = ?'); values.push(updates.reminder_enabled ? 1 : 0); }
-  if (updates.is_archived !== undefined) { setClauses.push('is_archived = ?'); values.push(updates.is_archived ? 1 : 0); }
-  if (updates.sort_order !== undefined) { setClauses.push('sort_order = ?'); values.push(updates.sort_order); }
+  if (updates.name !== undefined) { setClauses.push('name = ?'); values.push(updates.name); syncData.name = updates.name; }
+  if (updates.description !== undefined) { setClauses.push('description = ?'); values.push(updates.description); syncData.description = updates.description; }
+  if (updates.icon !== undefined) { setClauses.push('icon = ?'); values.push(updates.icon); syncData.icon = updates.icon; }
+  if (updates.color !== undefined) { setClauses.push('color = ?'); values.push(updates.color); syncData.color = updates.color; }
+  if (updates.category !== undefined) { setClauses.push('category = ?'); values.push(updates.category); syncData.category = updates.category; }
+  if (updates.frequency !== undefined) { setClauses.push('frequency = ?'); values.push(updates.frequency); syncData.frequency = updates.frequency; }
+  if (updates.target_days !== undefined) { setClauses.push('target_days = ?'); values.push(JSON.stringify(updates.target_days)); syncData.target_days = updates.target_days; }
+  if (updates.reminder_time !== undefined) { setClauses.push('reminder_time = ?'); values.push(updates.reminder_time); syncData.reminder_time = updates.reminder_time; }
+  if (updates.reminder_enabled !== undefined) { setClauses.push('reminder_enabled = ?'); values.push(updates.reminder_enabled ? 1 : 0); syncData.reminder_enabled = updates.reminder_enabled; }
+  if (updates.is_archived !== undefined) { setClauses.push('is_archived = ?'); values.push(updates.is_archived ? 1 : 0); syncData.is_archived = updates.is_archived; }
+  if (updates.sort_order !== undefined) { setClauses.push('sort_order = ?'); values.push(updates.sort_order); syncData.sort_order = updates.sort_order; }
 
   if (setClauses.length === 0) return;
 
@@ -205,6 +252,14 @@ export async function updateHabit(
     `UPDATE habits SET ${setClauses.join(', ')} WHERE id = ?`,
     values
   );
+
+  const updated = await db.getFirstAsync<{ version: number }>(
+    'SELECT version FROM habits WHERE id = ?',
+    [id]
+  );
+  if (updated) syncData.version = updated.version;
+
+  await enqueueSync(db, 'habits', 'UPDATE', syncData);
 }
 
 export async function deleteHabit(
@@ -216,6 +271,8 @@ export async function deleteHabit(
     await db.runAsync('DELETE FROM completions WHERE habit_id = ?', [id]);
     await db.runAsync('DELETE FROM habits WHERE id = ?', [id]);
   });
+
+  await enqueueSync(db, 'habits', 'DELETE', { id });
 }
 
 // ─── Completion CRUD ───────────────────────────────────
@@ -273,7 +330,14 @@ export async function toggleCompletion(
       'DELETE FROM completions WHERE habit_id = ? AND completed_date = ?',
       [habitId, date]
     );
-    return false; // uncompleted
+
+    await enqueueSync(db, 'completions', 'DELETE', {
+      id: existing.id,
+      habit_id: habitId,
+      completed_date: date,
+    });
+
+    return false;
   }
 
   const id = generateId();
@@ -281,7 +345,16 @@ export async function toggleCompletion(
     'INSERT INTO completions (id, habit_id, completed_date) VALUES (?, ?, ?)',
     [id, habitId, date]
   );
-  return true; // completed
+
+  await enqueueSync(db, 'completions', 'INSERT', {
+    id,
+    habit_id: habitId,
+    completed_date: date,
+    note: null,
+    photo_uri: null,
+  });
+
+  return true;
 }
 
 export async function addCompletionNote(
@@ -295,6 +368,20 @@ export async function addCompletionNote(
     `UPDATE completions SET note = ?, photo_uri = ? WHERE habit_id = ? AND completed_date = ?`,
     [note, photoUri, habitId, date]
   );
+
+  const row = await db.getFirstAsync<{ id: string }>(
+    'SELECT id FROM completions WHERE habit_id = ? AND completed_date = ?',
+    [habitId, date]
+  );
+  if (row) {
+    await enqueueSync(db, 'completions', 'UPDATE', {
+      id: row.id,
+      habit_id: habitId,
+      completed_date: date,
+      note,
+      photo_uri: photoUri,
+    });
+  }
 }
 
 // ─── Streak Operations ─────────────────────────────────
@@ -339,12 +426,9 @@ export function calculateStreak(
   let tempStreak = 0;
   let checkDate = today;
 
-  // Check if today or yesterday is the starting point
   if (!dates.has(today)) {
     const yesterday = getDateString(addDays(parseDate(today), -1));
     if (!dates.has(yesterday)) {
-      // No recent completion — current streak is 0
-      // Still need to calculate longest
       const allSorted = [...dates].sort().reverse();
       for (let i = 0; i < allSorted.length; i++) {
         if (i === 0) {
@@ -367,14 +451,12 @@ export function calculateStreak(
     checkDate = yesterday;
   }
 
-  // Count current streak
   let d = checkDate;
   while (dates.has(d)) {
     current++;
     d = getDateString(addDays(parseDate(d), -1));
   }
 
-  // Calculate longest streak from all dates
   const allSorted = [...dates].sort();
   tempStreak = 1;
   for (let i = 1; i < allSorted.length; i++) {
@@ -407,13 +489,22 @@ export async function updateStreak(
     [habitId, current, longest, lastDate]
   );
 
-  return {
+  const streak: Streak = {
     habit_id: habitId,
     current_streak: current,
     longest_streak: longest,
     last_completed_date: lastDate,
     updated_at: new Date().toISOString(),
   };
+
+  await enqueueSync(db, 'streaks', 'UPDATE', {
+    habit_id: habitId,
+    current_streak: current,
+    longest_streak: longest,
+    last_completed_date: lastDate,
+  });
+
+  return streak;
 }
 
 // ─── Sync Queue Operations ─────────────────────────────

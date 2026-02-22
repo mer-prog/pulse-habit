@@ -34,7 +34,8 @@ export default function HabitDetailScreen() {
   const router = useRouter();
   const database = useSQLiteContext();
   const habit = useHabitStore((s) => s.habits.find((h) => h.id === id));
-  const completions = useHabitStore((s) => s.completions[id ?? ''] ?? []);
+  const EMPTY_COMPLETIONS: Completion[] = [];
+  const completions = useHabitStore((s) => s.completions[id ?? '']) ?? EMPTY_COMPLETIONS;
   const streak = useStreak(id ?? '');
   const updateHabitInStore = useHabitStore((s) => s.updateHabitInStore);
   const removeHabit = useHabitStore((s) => s.removeHabit);
