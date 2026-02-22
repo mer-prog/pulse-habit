@@ -16,8 +16,8 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      isAuthenticated: false,
-      isLoading: true,
+      isAuthenticated: true,  // GUEST MODE - revert before Supabase setup
+      isLoading: false,
 
       setUser: (user) =>
         set({

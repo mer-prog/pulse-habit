@@ -1,72 +1,44 @@
 import { useCallback, useEffect, useRef } from 'react';
-import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
-import {
-  requestNotificationPermissions,
-  scheduleHabitReminder,
-  cancelAllReminders,
-} from '@/lib/notifications';
+import { requestNotificationPermissions, scheduleHabitReminder, cancelAllReminders } from '@/lib/notifications';
 import { useSettingsStore } from '@/stores/settingsStore';
 import { useHabitStore } from '@/stores/habitStore';
 import type { Habit } from '@/types';
-
+let Notifications: any = null;
+// Disabled in Expo Go - enable in development builds
+// try { Notifications = require('expo-notifications'); } catch {}
 export function useNotifications() {
   const router = useRouter();
   const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
   const habits = useHabitStore((s) => s.habits);
-  const notificationListener = useRef<Notifications.EventSubscription>();
-  const responseListener = useRef<Notifications.EventSubscription>();
-
+  const responseListener = useRef<any>();
   useEffect(() => {
-    // Listen for notification taps
-    responseListener.current =
-      Notifications.addNotificationResponseReceivedListener((response) => {
+    if (!Notifications) return;
+    try {
+      responseListener.current = Notifications.addNotificationResponseReceivedListener((response: any) => {
         const habitId = response.notification.request.content.data?.habitId;
-        if (habitId && typeof habitId === 'string') {
-          router.push(`/habit/${habitId}`);
-        }
+        if (habitId && typeof habitId === 'string') { router.push('/habit/' + habitId); }
       });
-
+    } catch {}
     return () => {
-      if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
-      }
-      if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+      if (responseListener.current && Notifications) {
+        try { Notifications.removeNotificationSubscription(responseListener.current); } catch {}
       }
     };
   }, [router]);
-
   const requestPermissions = useCallback(async () => {
-    return requestNotificationPermissions();
+    try { return await requestNotificationPermissions(); } catch { return false; }
   }, []);
-
   const scheduleAllReminders = useCallback(async () => {
     if (!notificationsEnabled) return;
-
-    await cancelAllReminders();
-
-    const activeHabits = habits.filter(
-      (h) => !h.is_archived && h.reminder_enabled && h.reminder_time
-    );
-
-    for (const habit of activeHabits) {
-      await scheduleHabitReminder(habit);
-    }
+    try {
+      await cancelAllReminders();
+      for (const habit of habits.filter((h: any) => !h.is_archived && h.reminder_enabled && h.reminder_time)) { await scheduleHabitReminder(habit); }
+    } catch {}
   }, [habits, notificationsEnabled]);
-
-  const scheduleForHabit = useCallback(
-    async (habit: Habit) => {
-      if (!notificationsEnabled) return null;
-      return scheduleHabitReminder(habit);
-    },
-    [notificationsEnabled]
-  );
-
-  return {
-    requestPermissions,
-    scheduleAllReminders,
-    scheduleForHabit,
-    notificationsEnabled,
-  };
+  const scheduleForHabit = useCallback(async (habit: Habit) => {
+    if (!notificationsEnabled) return null;
+    try { return await scheduleHabitReminder(habit); } catch { return null; }
+  }, [notificationsEnabled]);
+  return { requestPermissions, scheduleAllReminders, scheduleForHabit, notificationsEnabled };
 }
