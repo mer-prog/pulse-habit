@@ -1,4 +1,4 @@
-import '../../../global.css';
+import '../../global.css';
 import { useEffect, Suspense } from 'react';
 import { useColorScheme } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
