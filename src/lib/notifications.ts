@@ -1,13 +1,15 @@
-import * as Notifications from 'expo-notifications';
+let Notifications: any = null;
+// Disabled in Expo Go - enable in development builds
+// try { Notifications = require('expo-notifications'); } catch {}
 import type { Habit } from '@/types';
 
-Notifications.setNotificationHandler({
+if (Notifications) { Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: false,
   }),
-});
+}); }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
   const { status: existing } = await Notifications.getPermissionsAsync();
