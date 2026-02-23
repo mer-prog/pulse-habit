@@ -1,5 +1,5 @@
 import { View, Text } from 'react-native';
-import { brutal, fontFamily } from '@/constants/theme';
+import { brutal, fontFamily, useTheme } from '@/constants/theme';
 import { OffsetShadow } from './OffsetShadow';
 
 interface StatBoxProps {
@@ -8,18 +8,16 @@ interface StatBoxProps {
   accent?: string;
 }
 
-export function StatBox({
-  label,
-  value,
-  accent = brutal.accent,
-}: StatBoxProps) {
+export function StatBox({ label, value, accent = brutal.accent }: StatBoxProps) {
+  const { colors } = useTheme();
+
   return (
     <OffsetShadow offset={brutal.shadowOffsetSm} style={{ flex: 1 }}>
       <View
         style={{
           borderWidth: brutal.borderWidth.md,
-          borderColor: brutal.ink,
-          backgroundColor: '#FFFFFF',
+          borderColor: colors.border,
+          backgroundColor: colors.card,
           paddingVertical: 12,
           paddingHorizontal: 8,
           alignItems: 'center',
@@ -41,7 +39,7 @@ export function StatBox({
             fontSize: brutal.fontSize.xs,
             fontFamily: fontFamily.mono,
             fontWeight: '700',
-            color: brutal.inkMuted,
+            color: colors.inkMuted,
             textTransform: 'uppercase',
             letterSpacing: 1.2,
             marginTop: 4,
@@ -53,4 +51,3 @@ export function StatBox({
     </OffsetShadow>
   );
 }
-

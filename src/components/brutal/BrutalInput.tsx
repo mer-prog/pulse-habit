@@ -1,23 +1,18 @@
 import { useState } from 'react';
 import { View, Text, TextInput, TextInputProps } from 'react-native';
-import { brutal, fontFamily } from '@/constants/theme';
+import { brutal, fontFamily, useTheme } from '@/constants/theme';
 
 interface BrutalInputProps extends Omit<TextInputProps, 'style' | 'onChange'> {
   label?: string;
   error?: string;
-  /** Convenience alias for onChangeText */
   onChange?: (text: string) => void;
 }
 
-export function BrutalInput({
-  label,
-  error,
-  onChange,
-  ...inputProps
-}: BrutalInputProps) {
+export function BrutalInput({ label, error, onChange, ...inputProps }: BrutalInputProps) {
   const [focused, setFocused] = useState(false);
+  const { colors, isDark } = useTheme();
 
-  const shadowColor = error ? brutal.rose : focused ? brutal.accent : brutal.ink;
+  const shadowColor = error ? brutal.rose : focused ? brutal.accent : colors.shadow;
 
   return (
     <View style={{ marginBottom: 14 }}>
@@ -27,7 +22,7 @@ export function BrutalInput({
             fontSize: brutal.fontSize.sm,
             fontFamily: fontFamily.mono,
             fontWeight: '700',
-            color: brutal.inkSoft,
+            color: colors.inkSoft,
             textTransform: 'uppercase',
             letterSpacing: 1,
             marginBottom: 6,
@@ -38,7 +33,6 @@ export function BrutalInput({
       )}
 
       <View style={{ position: 'relative' }}>
-        {/* Shadow */}
         <View
           style={{
             position: 'absolute',
@@ -49,30 +43,23 @@ export function BrutalInput({
             backgroundColor: shadowColor,
           }}
         />
-        {/* Input */}
         <TextInput
           {...inputProps}
           onChangeText={onChange ?? inputProps.onChangeText}
-          onFocus={(e) => {
-            setFocused(true);
-            inputProps.onFocus?.(e);
-          }}
-          onBlur={(e) => {
-            setFocused(false);
-            inputProps.onBlur?.(e);
-          }}
-          placeholderTextColor="#BBB"
+          onFocus={(e) => { setFocused(true); inputProps.onFocus?.(e); }}
+          onBlur={(e) => { setFocused(false); inputProps.onBlur?.(e); }}
+          placeholderTextColor={isDark ? '#555' : '#BBB'}
           style={{
             position: 'relative',
-            backgroundColor: '#FFFFFF',
+            backgroundColor: colors.card,
             borderWidth: brutal.borderWidth.md,
-            borderColor: error ? brutal.rose : brutal.ink,
+            borderColor: error ? brutal.rose : colors.border,
             paddingHorizontal: 14,
             paddingVertical: 12,
             fontSize: 15,
             fontFamily: fontFamily.body,
             fontWeight: '500',
-            color: brutal.ink,
+            color: colors.ink,
           }}
         />
       </View>
@@ -92,4 +79,3 @@ export function BrutalInput({
     </View>
   );
 }
-

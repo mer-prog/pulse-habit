@@ -1,5 +1,5 @@
 import { View, Text } from 'react-native';
-import { brutal, fontFamily } from '@/constants/theme';
+import { brutal, fontFamily, useTheme } from '@/constants/theme';
 
 interface BrutalTagProps {
   children: string;
@@ -10,10 +10,12 @@ interface BrutalTagProps {
 
 export function BrutalTag({
   children,
-  color = brutal.ink,
+  color,
   variant = 'outline',
   small = false,
 }: BrutalTagProps) {
+  const { colors } = useTheme();
+  const tagColor = color ?? colors.ink;
   const isFilled = variant === 'filled';
 
   return (
@@ -21,9 +23,9 @@ export function BrutalTag({
       style={{
         paddingHorizontal: small ? 6 : 10,
         paddingVertical: small ? 2 : 3,
-        backgroundColor: isFilled ? color : 'transparent',
+        backgroundColor: isFilled ? tagColor : 'transparent',
         borderWidth: isFilled ? 0 : brutal.borderWidth.md,
-        borderColor: color,
+        borderColor: tagColor,
         alignSelf: 'flex-start',
       }}
     >
@@ -32,7 +34,7 @@ export function BrutalTag({
           fontSize: small ? brutal.fontSize.xs : brutal.fontSize.sm,
           fontFamily: fontFamily.mono,
           fontWeight: '700',
-          color: isFilled ? brutal.white : color,
+          color: isFilled ? '#FFFFFF' : tagColor,
           textTransform: 'uppercase',
           letterSpacing: 0.8,
         }}
@@ -43,8 +45,7 @@ export function BrutalTag({
   );
 }
 
-/** Convenience: black filled tag */
 export function BlackTag({ children }: { children: string }) {
-  return <BrutalTag variant="filled" color={brutal.ink}>{children}</BrutalTag>;
+  const { colors } = useTheme();
+  return <BrutalTag variant="filled" color={colors.ink}>{children}</BrutalTag>;
 }
-

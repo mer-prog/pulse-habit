@@ -23,7 +23,7 @@ import { useSync } from '@/hooks/useSync';
 import { ToastContainer } from '@/components/common/Toast';
 import { migrateDatabase } from '@/lib/database';
 import { DB_NAME } from '@/constants/config';
-import { brutal } from '@/constants/theme';
+import { brutal, useTheme } from '@/constants/theme';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,12 +36,10 @@ function SyncManager() {
     if (isAuthenticated && !isLoading) {
       if (__DEV__) console.log('[SyncManager] Auth ready, triggering sync...');
       sync();
-
       const retryTimer = setTimeout(() => {
         if (__DEV__) console.log('[SyncManager] Retry sync (session may be ready now)');
         sync();
       }, 3000);
-
       return () => clearTimeout(retryTimer);
     }
   }, [isAuthenticated, isLoading]);
@@ -53,6 +51,7 @@ function AppContent() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
   const initialize = useAuthStore((s) => s.initialize);
+  const { colors, statusBarStyle } = useTheme();
 
   useEffect(() => {
     void initialize();
@@ -60,14 +59,7 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: brutal.bg,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color={brutal.accent} />
       </View>
     );
@@ -75,20 +67,15 @@ function AppContent() {
 
   return (
     <>
+      <StatusBar style={statusBarStyle} />
       <Stack screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <Stack.Screen name="(tabs)" />
         ) : (
           <Stack.Screen name="(auth)" />
         )}
-        <Stack.Screen
-          name="habit/[id]"
-          options={{ presentation: 'card' }}
-        />
-        <Stack.Screen
-          name="habit/new"
-          options={{ presentation: 'modal' }}
-        />
+        <Stack.Screen name="habit/[id]" options={{ presentation: 'card' }} />
+        <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
       </Stack>
       <SyncManager />
       <ToastContainer />
@@ -112,19 +99,15 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return null;
-  }
+  if (!fontsLoaded) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <SQLiteProvider databaseName={DB_NAME} onInit={migrateDatabase}>
-          <StatusBar style="dark" />
           <AppContent />
         </SQLiteProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
-

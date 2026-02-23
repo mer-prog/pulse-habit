@@ -1,5 +1,5 @@
 import { View, ViewStyle, StyleProp } from 'react-native';
-import { brutal } from '@/constants/theme';
+import { brutal, useTheme } from '@/constants/theme';
 import { OffsetShadow } from './OffsetShadow';
 
 interface BrutalCardProps {
@@ -12,14 +12,14 @@ interface BrutalCardProps {
 
 export function BrutalCard({
   children,
-  borderColor = brutal.ink,
+  borderColor,
   shadowSize = 'sm',
   pressed = false,
   style,
 }: BrutalCardProps) {
+  const { colors } = useTheme();
   const offset =
     shadowSize === 'lg' ? brutal.shadowOffset
-    : shadowSize === 'md' ? brutal.shadowOffsetSm
     : brutal.shadowOffsetSm;
 
   const borderWidth =
@@ -31,9 +31,9 @@ export function BrutalCard({
       <View
         style={[
           {
-            backgroundColor: '#FFFFFF',
+            backgroundColor: colors.card,
             borderWidth,
-            borderColor,
+            borderColor: borderColor ?? colors.border,
             padding: brutal.space.lg,
           },
           style,
@@ -44,4 +44,3 @@ export function BrutalCard({
     </OffsetShadow>
   );
 }
-
