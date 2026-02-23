@@ -1,17 +1,14 @@
 import { View, Text } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import Animated, {
-  useAnimatedProps,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  withSequence,
-  Easing,
+  useAnimatedProps, useAnimatedStyle, useSharedValue,
+  withTiming, withSequence, Easing,
 } from 'react-native-reanimated';
 import { useEffect } from 'react';
+import { brutal, fontFamily, useTheme } from '@/constants/theme';
 
 interface StreakRingProps {
-  progress: number; // 0 to 1
+  progress: number;
   size?: number;
   strokeWidth?: number;
   color?: string;
@@ -23,14 +20,10 @@ interface StreakRingProps {
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export function StreakRing({
-  progress,
-  size = 120,
-  strokeWidth = 8,
-  color = '#6366F1',
-  streakCount,
-  showPulse = false,
-  label,
+  progress, size = 120, strokeWidth = 8, color = '#6366F1',
+  streakCount, showPulse = false, label,
 }: StreakRingProps) {
+  const { colors } = useTheme();
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const animatedProgress = useSharedValue(0);
@@ -38,8 +31,7 @@ export function StreakRing({
 
   useEffect(() => {
     animatedProgress.value = withTiming(Math.min(Math.max(progress, 0), 1), {
-      duration: 800,
-      easing: Easing.bezier(0.4, 0, 0.2, 1),
+      duration: 800, easing: Easing.bezier(0.4, 0, 0.2, 1),
     });
   }, [progress]);
 
@@ -61,46 +53,20 @@ export function StreakRing({
   }));
 
   return (
-    <Animated.View
-      style={[{ width: size, height: size }, containerStyle]}
-      className="items-center justify-center"
-    >
+    <Animated.View style={[{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }, containerStyle]}>
       <Svg width={size} height={size}>
-        {/* Background circle */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke="#E2E8F0"
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        {/* Progress circle */}
-        <AnimatedCircle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={color}
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          animatedProps={animatedProps}
-          transform={`rotate(-90, ${size / 2}, ${size / 2})`}
-        />
+        <Circle cx={size / 2} cy={size / 2} r={radius} stroke={colors.borderLight} strokeWidth={strokeWidth} fill="none" />
+        <AnimatedCircle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={strokeWidth} fill="none" strokeLinecap="butt" strokeDasharray={circumference} animatedProps={animatedProps} transform={`rotate(-90, ${size / 2}, ${size / 2})`} />
       </Svg>
-      <View className="absolute items-center">
+      <View style={{ position: 'absolute', alignItems: 'center' }}>
         {streakCount !== undefined && (
-          <Text className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-            {streakCount}
-          </Text>
+          <Text style={{ fontSize: brutal.fontSize['3xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>{streakCount}</Text>
         )}
         {label && (
-          <Text className="text-xs text-slate-500 dark:text-slate-400">
-            {label}
-          </Text>
+          <Text style={{ fontSize: brutal.fontSize.xs, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, letterSpacing: 0.5 }}>{label.toUpperCase()}</Text>
         )}
       </View>
     </Animated.View>
   );
 }
+

@@ -91,12 +91,13 @@ export default function TodayScreen() {
         onPress={() => router.push('/habit/new')}
         style={({ pressed }) => ({
           position: 'absolute', bottom: 90, right: 20, width: 56, height: 56,
+          zIndex: 10, elevation: 8,
           backgroundColor: brutal.accent,
           borderWidth: 3, borderColor: colors.border,
           alignItems: 'center', justifyContent: 'center',
           shadowColor: colors.shadow,
           shadowOffset: { width: pressed ? 1 : 4, height: pressed ? 1 : 4 },
-          shadowOpacity: 1, shadowRadius: 0, elevation: 0,
+          shadowOpacity: 1, shadowRadius: 0,
           transform: [{ translateX: pressed ? 3 : 0 }, { translateY: pressed ? 3 : 0 }],
         })}
       >
@@ -123,3 +124,4 @@ function DotGrid() {
     </View>
   );
 }
+

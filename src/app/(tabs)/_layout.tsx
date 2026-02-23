@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 import { brutal, fontFamily, useTheme } from '@/constants/theme';
 
 function TabIcon({ icon, label, focused }: { icon: string; label: string; focused: boolean }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 6, gap: 2 }}>
       <Text style={{ fontSize: 18, color: focused ? brutal.accent : colors.inkMuted }}>{icon}</Text>
@@ -13,7 +13,7 @@ function TabIcon({ icon, label, focused }: { icon: string; label: string; focuse
           fontFamily: fontFamily.mono,
           fontWeight: '700',
           letterSpacing: 1,
-          color: focused ? colors.white : colors.inkMuted,
+          color: focused ? (isDark ? colors.ink : colors.white) : colors.inkMuted,
         }}
       >
         {label}
@@ -23,7 +23,7 @@ function TabIcon({ icon, label, focused }: { icon: string; label: string; focuse
 }
 
 export default function TabsLayout() {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   return (
     <Tabs
@@ -39,7 +39,7 @@ export default function TabsLayout() {
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarActiveBackgroundColor: colors.ink,
+        tabBarActiveBackgroundColor: isDark ? colors.bgAlt : colors.ink,
         tabBarInactiveBackgroundColor: 'transparent',
         tabBarItemStyle: {
           borderRightWidth: 1,
@@ -66,3 +66,4 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+

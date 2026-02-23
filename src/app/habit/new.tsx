@@ -1,17 +1,9 @@
 import { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  Switch,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, Switch } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
+import { BrutalButton, BrutalInput, OffsetShadow } from '@/components/brutal';
+import { brutal, fontFamily, useTheme } from '@/constants/theme';
 import { useHabits } from '@/hooks/useHabits';
 import { useNotifications } from '@/hooks/useNotifications';
 import { hapticSuccess } from '@/lib/haptics';
@@ -21,34 +13,29 @@ import type { HabitCategory, HabitFrequency } from '@/types';
 
 export default function NewHabitScreen() {
   const router = useRouter();
+  const { colors, isDark } = useTheme();
   const { createHabit } = useHabits();
-  const { requestPermissions, scheduleForHabit } = useNotifications();
+  const { requestPermissions } = useNotifications();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // Step 1: Basic info
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('🎯');
   const [color, setColor] = useState('#6366F1');
   const [category, setCategory] = useState<HabitCategory>('other');
 
-  // Step 2: Frequency
   const [frequency, setFrequency] = useState<HabitFrequency>('daily');
   const [targetDays, setTargetDays] = useState<number[]>([1, 2, 3, 4, 5, 6, 0]);
 
-  // Step 3: Reminder
   const [reminderEnabled, setReminderEnabled] = useState(false);
   const [reminderTime, setReminderTime] = useState(DEFAULT_REMINDER_TIME);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateStep1 = (): boolean => {
-    if (!name.trim()) {
-      setErrors({ name: 'Name is required' });
-      return false;
-    }
+    if (!name.trim()) { setErrors({ name: 'Name is required' }); return false; }
     setErrors({});
     return true;
   };
@@ -59,40 +46,28 @@ export default function NewHabitScreen() {
   };
 
   const handleBack = () => {
-    if (step === 1) {
-      router.back();
-    } else {
-      setStep((s) => s - 1);
-    }
+    if (step === 1) router.back();
+    else setStep((s) => s - 1);
   };
 
   const toggleDay = (day: number) => {
-    setTargetDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
+    setTargetDays((prev) => prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]);
   };
 
   const handleCreate = async () => {
     setLoading(true);
     try {
-      if (reminderEnabled) {
-        await requestPermissions();
-      }
-
-      const id = await createHabit({
+      if (reminderEnabled) await requestPermissions();
+      await createHabit({
         name: name.trim(),
         description: description.trim() || null,
-        icon,
-        color,
-        category,
-        frequency,
+        icon, color, category, frequency,
         target_days: frequency === 'daily' ? [0, 1, 2, 3, 4, 5, 6] : targetDays,
         reminder_time: reminderEnabled ? reminderTime : null,
         reminder_enabled: reminderEnabled,
         is_archived: false,
         sort_order: 0,
       });
-
       await hapticSuccess();
       router.back();
     } catch (error) {
@@ -103,179 +78,91 @@ export default function NewHabitScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }} edges={['top']}>
       {/* Header */}
-      <View className="flex-row items-center justify-between px-5 py-3">
-        <TouchableOpacity onPress={handleBack} hitSlop={8}>
-          <Ionicons
-            name={step === 1 ? 'close' : 'arrow-back'}
-            size={24}
-            color="#64748B"
-          />
-        </TouchableOpacity>
-        <Text className="text-base font-semibold text-slate-900 dark:text-slate-100">
-          New Habit ({step}/3)
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 }}>
+        <Pressable onPress={handleBack} hitSlop={8}>
+          <Text style={{ fontSize: 22, color: colors.ink }}>{step === 1 ? '✕' : '←'}</Text>
+        </Pressable>
+        <Text style={{ fontSize: brutal.fontSize.base, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.ink, letterSpacing: 1 }}>
+          NEW HABIT ({step}/3)
         </Text>
         <View style={{ width: 24 }} />
       </View>
 
       {/* Step indicator */}
-      <View className="flex-row gap-2 px-5 pb-4">
+      <View style={{ flexDirection: 'row', gap: 6, paddingHorizontal: 16, marginBottom: 16 }}>
         {[1, 2, 3].map((s) => (
-          <View
-            key={s}
-            className={`h-1 flex-1 rounded-full ${
-              s <= step ? 'bg-indigo-500' : 'bg-slate-200 dark:bg-slate-700'
-            }`}
-          />
+          <View key={s} style={{ flex: 1, height: 4, backgroundColor: s <= step ? brutal.accent : colors.borderLight, borderWidth: 1, borderColor: s <= step ? brutal.accent : colors.border }} />
         ))}
       </View>
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 40 }}>
         {step === 1 && (
           <View>
-            <Input
-              label="Habit Name"
-              placeholder="e.g., Morning Jog"
-              value={name}
-              onChangeText={setName}
-              error={errors.name}
-            />
-            <Input
-              label="Description (optional)"
-              placeholder="What is this habit about?"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={2}
-            />
+            <BrutalInput label="HABIT NAME" placeholder="e.g., Morning Jog" value={name} onChangeText={setName} error={errors.name} />
+            <BrutalInput label="DESCRIPTION (OPTIONAL)" placeholder="What is this habit about?" value={description} onChangeText={setDescription} multiline numberOfLines={2} />
 
-            {/* Icon selection */}
-            <Text className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-              Icon
-            </Text>
-            <View className="mb-4 flex-row flex-wrap gap-2">
+            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 8 }}>ICON</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
               {HABIT_ICONS.map((i) => (
-                <TouchableOpacity
-                  key={i}
-                  onPress={() => setIcon(i)}
-                  className={`h-11 w-11 items-center justify-center rounded-xl ${
-                    icon === i ? 'bg-indigo-100 dark:bg-indigo-900/30' : 'bg-white dark:bg-slate-800'
-                  }`}
-                >
-                  <Text className="text-2xl">{i}</Text>
-                </TouchableOpacity>
+                <Pressable key={i} onPress={() => setIcon(i)} style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: icon === i ? brutal.accent : colors.border, backgroundColor: icon === i ? (isDark ? '#2A1A0A' : '#FFF3E0') : colors.card }}>
+                  <Text style={{ fontSize: 22 }}>{i}</Text>
+                </Pressable>
               ))}
             </View>
 
-            {/* Color selection */}
-            <Text className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-              Color
-            </Text>
-            <View className="mb-4 flex-row flex-wrap gap-3">
+            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 8 }}>COLOR</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
               {HABIT_COLORS.map((c) => (
-                <TouchableOpacity
-                  key={c}
-                  onPress={() => setColor(c)}
-                  className={`h-10 w-10 items-center justify-center rounded-full ${
-                    color === c ? 'border-2 border-slate-900 dark:border-white' : ''
-                  }`}
-                  style={{ backgroundColor: c }}
-                >
-                  {color === c && <Ionicons name="checkmark" size={18} color="#FFF" />}
-                </TouchableOpacity>
+                <Pressable key={c} onPress={() => setColor(c)} style={{ width: 38, height: 38, backgroundColor: c, borderWidth: color === c ? 3 : 2, borderColor: color === c ? colors.ink : colors.border, alignItems: 'center', justifyContent: 'center' }}>
+                  {color === c && <Text style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>✓</Text>}
+                </Pressable>
               ))}
             </View>
 
-            {/* Category selection */}
-            <Text className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-              Category
-            </Text>
-            <View className="mb-4 flex-row flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
-                <TouchableOpacity
-                  key={cat.key}
-                  onPress={() => setCategory(cat.key)}
-                  className={`rounded-full px-4 py-2 ${
-                    category === cat.key
-                      ? 'bg-indigo-500'
-                      : 'bg-white dark:bg-slate-800'
-                  }`}
-                >
-                  <Text
-                    className={`text-sm font-medium ${
-                      category === cat.key
-                        ? 'text-white'
-                        : 'text-slate-600 dark:text-slate-300'
-                    }`}
-                  >
-                    {cat.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 8 }}>CATEGORY</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+              {CATEGORIES.map((cat) => {
+                const isActive = category === cat.key;
+                return (
+                  <Pressable key={cat.key} onPress={() => setCategory(cat.key)} style={{ paddingHorizontal: 14, paddingVertical: 8, borderWidth: 2, borderColor: isActive ? cat.color : colors.border, backgroundColor: isActive ? cat.color : colors.card }}>
+                    <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: isActive ? '#FFFFFF' : colors.ink, letterSpacing: 0.5 }}>{cat.label.toUpperCase()}</Text>
+                  </Pressable>
+                );
+              })}
             </View>
           </View>
         )}
 
         {step === 2 && (
           <View>
-            <Text className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">
-              How often?
-            </Text>
-
-            {/* Frequency options */}
+            <Text style={{ fontSize: brutal.fontSize.lg, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink, marginBottom: 16 }}>How often?</Text>
             {([
-              { key: 'daily' as const, label: 'Every Day', desc: 'Build a daily routine' },
-              { key: 'weekly' as const, label: 'Specific Days', desc: 'Choose which days' },
-              { key: 'custom' as const, label: 'Custom', desc: 'Flexible schedule' },
-            ]).map((opt) => (
-              <TouchableOpacity
-                key={opt.key}
-                onPress={() => setFrequency(opt.key)}
-                className={`mb-3 rounded-2xl border-2 p-4 ${
-                  frequency === opt.key
-                    ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                    : 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800'
-                }`}
-              >
-                <Text className="font-semibold text-slate-900 dark:text-slate-100">
-                  {opt.label}
-                </Text>
-                <Text className="mt-0.5 text-sm text-slate-500">{opt.desc}</Text>
-              </TouchableOpacity>
-            ))}
-
-            {/* Day selection for weekly/custom */}
+              { key: 'daily' as const, label: 'EVERY DAY', desc: 'Build a daily routine' },
+              { key: 'weekly' as const, label: 'SPECIFIC DAYS', desc: 'Choose which days' },
+              { key: 'custom' as const, label: 'CUSTOM', desc: 'Flexible schedule' },
+            ]).map((opt) => {
+              const isActive = frequency === opt.key;
+              return (
+                <Pressable key={opt.key} onPress={() => setFrequency(opt.key)} style={{ marginBottom: 10, padding: 14, borderWidth: 2, borderColor: isActive ? brutal.accent : colors.border, backgroundColor: isActive ? (isDark ? '#1A1008' : '#FFF8F0') : colors.card }}>
+                  <Text style={{ fontSize: brutal.fontSize.base, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>{opt.label}</Text>
+                  <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.monoRegular, color: colors.inkMuted, marginTop: 2 }}>{opt.desc}</Text>
+                </Pressable>
+              );
+            })}
             {frequency !== 'daily' && (
-              <View className="mt-4">
-                <Text className="mb-3 text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Select days
-                </Text>
-                <View className="flex-row gap-2">
-                  {WEEKDAYS.map((day) => (
-                    <TouchableOpacity
-                      key={day.key}
-                      onPress={() => toggleDay(day.key)}
-                      className={`flex-1 items-center rounded-xl py-3 ${
-                        targetDays.includes(day.key)
-                          ? 'bg-indigo-500'
-                          : 'bg-white dark:bg-slate-800'
-                      }`}
-                    >
-                      <Text
-                        className={`text-xs font-medium ${
-                          targetDays.includes(day.key)
-                            ? 'text-white'
-                            : 'text-slate-600 dark:text-slate-300'
-                        }`}
-                      >
-                        {day.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+              <View style={{ marginTop: 16 }}>
+                <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 10 }}>SELECT DAYS</Text>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {WEEKDAYS.map((day) => {
+                    const isActive = targetDays.includes(day.key);
+                    return (
+                      <Pressable key={day.key} onPress={() => toggleDay(day.key)} style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderWidth: 2, borderColor: isActive ? brutal.accent : colors.border, backgroundColor: isActive ? brutal.accent : colors.card }}>
+                        <Text style={{ fontSize: brutal.fontSize.xs, fontFamily: fontFamily.mono, fontWeight: '700', color: isActive ? '#FFFFFF' : colors.ink }}>{day.label.charAt(0)}</Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
               </View>
             )}
@@ -284,81 +171,49 @@ export default function NewHabitScreen() {
 
         {step === 3 && (
           <View>
-            <Text className="mb-4 text-base font-semibold text-slate-900 dark:text-slate-100">
-              Set a Reminder
-            </Text>
-
-            <Card>
-              <View className="flex-row items-center justify-between">
-                <View className="flex-row items-center">
-                  <Ionicons name="notifications" size={20} color="#6366F1" />
-                  <Text className="ml-2 text-base text-slate-900 dark:text-slate-100">
-                    Daily Reminder
-                  </Text>
+            <Text style={{ fontSize: brutal.fontSize.lg, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink, marginBottom: 16 }}>Set a Reminder</Text>
+            <OffsetShadow offset={brutal.shadowOffsetSm}>
+              <View style={{ borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card, padding: 14 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: brutal.fontSize.base, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>⏰ Daily Reminder</Text>
+                  <Switch value={reminderEnabled} onValueChange={setReminderEnabled} trackColor={{ false: colors.borderLight, true: brutal.accent }} thumbColor={reminderEnabled ? '#FFFFFF' : colors.inkMuted} />
                 </View>
-                <Switch
-                  value={reminderEnabled}
-                  onValueChange={setReminderEnabled}
-                  trackColor={{ false: '#CBD5E1', true: '#818CF8' }}
-                  thumbColor={reminderEnabled ? '#6366F1' : '#F1F5F9'}
-                />
+                {reminderEnabled && (
+                  <View style={{ marginTop: 12 }}>
+                    <BrutalInput label="TIME (HH:MM)" placeholder="09:00" value={reminderTime} onChangeText={setReminderTime} keyboardType="numbers-and-punctuation" />
+                  </View>
+                )}
               </View>
+            </OffsetShadow>
 
-              {reminderEnabled && (
-                <View className="mt-4">
-                  <Input
-                    label="Time (HH:MM)"
-                    placeholder="09:00"
-                    value={reminderTime}
-                    onChangeText={setReminderTime}
-                    keyboardType="numbers-and-punctuation"
-                  />
-                </View>
-              )}
-            </Card>
-
-            {/* Preview */}
-            <Card className="mt-4">
-              <Text className="mb-2 text-xs font-medium uppercase text-slate-400">
-                Preview
-              </Text>
-              <View className="flex-row items-center">
-                <View
-                  className="mr-3 h-12 w-12 items-center justify-center rounded-xl"
-                  style={{ backgroundColor: `${color}20` }}
-                >
-                  <Text className="text-2xl">{icon}</Text>
-                </View>
-                <View>
-                  <Text className="font-semibold text-slate-900 dark:text-slate-100">
-                    {name || 'Habit Name'}
-                  </Text>
-                  <Text className="text-xs text-slate-500">
-                    {frequency === 'daily'
-                      ? 'Every day'
-                      : `${targetDays.length} days/week`}
-                    {reminderEnabled ? ` • ${reminderTime}` : ''}
-                  </Text>
+            <OffsetShadow offset={brutal.shadowOffsetSm}>
+              <View style={{ borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card, padding: 14, marginTop: 16 }}>
+                <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, letterSpacing: 1, marginBottom: 10 }}>PREVIEW</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <View style={{ width: 48, height: 48, borderWidth: 2, borderColor: colors.border, backgroundColor: `${color}20`, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                    <Text style={{ fontSize: 24 }}>{icon}</Text>
+                  </View>
+                  <View>
+                    <Text style={{ fontSize: brutal.fontSize.lg, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>{name || 'Habit Name'}</Text>
+                    <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.monoRegular, color: colors.inkMuted }}>
+                      {frequency === 'daily' ? 'Every day' : `${targetDays.length} days/week`}{reminderEnabled ? ` · ${reminderTime}` : ''}
+                    </Text>
+                  </View>
                 </View>
               </View>
-            </Card>
+            </OffsetShadow>
           </View>
         )}
       </ScrollView>
 
-      {/* Bottom button */}
-      <View className="border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+      <View style={{ borderTopWidth: 3, borderTopColor: colors.border, paddingHorizontal: 16, paddingVertical: 14, backgroundColor: colors.bg }}>
         {step < 3 ? (
-          <Button title="Next" onPress={handleNext} fullWidth />
+          <BrutalButton title="NEXT" onPress={handleNext} fullWidth />
         ) : (
-          <Button
-            title="Create Habit"
-            onPress={handleCreate}
-            loading={loading}
-            fullWidth
-          />
+          <BrutalButton title="CREATE HABIT" onPress={handleCreate} loading={loading} fullWidth />
         )}
       </View>
     </SafeAreaView>
   );
 }
+
