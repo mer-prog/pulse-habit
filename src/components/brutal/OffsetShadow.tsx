@@ -1,10 +1,9 @@
 import { View, ViewStyle, StyleProp } from 'react-native';
 import Animated, {
   useAnimatedStyle,
-  useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { brutal } from '@/constants/theme';
+import { brutal, useTheme } from '@/constants/theme';
 
 interface OffsetShadowProps {
   children: React.ReactNode;
@@ -14,20 +13,15 @@ interface OffsetShadowProps {
   style?: StyleProp<ViewStyle>;
 }
 
-/**
- * Wraps any component with a brutalist offset shadow.
- * When `pressed` is true, shadow collapses and content shifts.
- */
 export function OffsetShadow({
   children,
   offset = brutal.shadowOffset,
-  color = brutal.ink,
+  color,
   pressed = false,
   style,
 }: OffsetShadowProps) {
-  const translate = useSharedValue(0);
-  const shadowOpacity = useSharedValue(1);
-
+  const { colors } = useTheme();
+  const shadowColor = color ?? colors.shadow;
   const currentOffset = pressed ? brutal.shadowOffsetPressed : offset;
 
   const contentStyle = useAnimatedStyle(() => ({
@@ -39,7 +33,6 @@ export function OffsetShadow({
 
   return (
     <View style={[{ position: 'relative' }, style]}>
-      {/* Shadow layer */}
       <View
         style={{
           position: 'absolute',
@@ -47,14 +40,12 @@ export function OffsetShadow({
           left: offset,
           right: -offset,
           bottom: -offset,
-          backgroundColor: color,
+          backgroundColor: shadowColor,
         }}
       />
-      {/* Content layer */}
       <Animated.View style={[{ position: 'relative' }, contentStyle]}>
         {children}
       </Animated.View>
     </View>
   );
 }
-

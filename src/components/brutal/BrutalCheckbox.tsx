@@ -8,7 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { hapticSuccess } from '@/lib/haptics';
-import { brutal } from '@/constants/theme';
+import { brutal, useTheme } from '@/constants/theme';
 
 interface BrutalCheckboxProps {
   checked: boolean;
@@ -17,12 +17,9 @@ interface BrutalCheckboxProps {
   size?: number;
 }
 
-export function BrutalCheckbox({
-  checked,
-  onToggle,
-  color = brutal.ink,
-  size = 28,
-}: BrutalCheckboxProps) {
+export function BrutalCheckbox({ checked, onToggle, color, size = 28 }: BrutalCheckboxProps) {
+  const { colors } = useTheme();
+  const resolvedColor = color ?? colors.ink;
   const scale = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -49,8 +46,8 @@ export function BrutalCheckbox({
             width: size,
             height: size,
             borderWidth: 3,
-            borderColor: checked ? color : brutal.ink,
-            backgroundColor: checked ? color : 'transparent',
+            borderColor: checked ? resolvedColor : colors.border,
+            backgroundColor: checked ? resolvedColor : 'transparent',
             alignItems: 'center',
             justifyContent: 'center',
           },
@@ -71,4 +68,3 @@ export function BrutalCheckbox({
     </Pressable>
   );
 }
-

@@ -1,35 +1,19 @@
 import { Tabs } from 'expo-router';
 import { View, Text } from 'react-native';
-import { brutal, fontFamily } from '@/constants/theme';
+import { brutal, fontFamily, useTheme } from '@/constants/theme';
 
-function TabIcon({
-  icon,
-  label,
-  focused,
-}: {
-  icon: string;
-  label: string;
-  focused: boolean;
-}) {
+function TabIcon({ icon, label, focused }: { icon: string; label: string; focused: boolean }) {
+  const { colors } = useTheme();
   return (
-    <View
-      style={{
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingTop: 6,
-        gap: 2,
-      }}
-    >
-      <Text style={{ fontSize: 18, color: focused ? brutal.accent : brutal.inkMuted }}>
-        {icon}
-      </Text>
+    <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 6, gap: 2 }}>
+      <Text style={{ fontSize: 18, color: focused ? brutal.accent : colors.inkMuted }}>{icon}</Text>
       <Text
         style={{
           fontSize: 9,
           fontFamily: fontFamily.mono,
           fontWeight: '700',
           letterSpacing: 1,
-          color: focused ? brutal.white : brutal.inkMuted,
+          color: focused ? colors.white : colors.inkMuted,
         }}
       >
         {label}
@@ -39,61 +23,46 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
         tabBarStyle: {
-          backgroundColor: brutal.bg,
+          backgroundColor: colors.bg,
           borderTopWidth: 3,
-          borderTopColor: brutal.ink,
+          borderTopColor: colors.border,
           height: 68,
           paddingBottom: 0,
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarActiveBackgroundColor: brutal.ink,
+        tabBarActiveBackgroundColor: colors.ink,
         tabBarInactiveBackgroundColor: 'transparent',
         tabBarItemStyle: {
           borderRightWidth: 1,
-          borderRightColor: brutal.borderLight,
+          borderRightColor: colors.borderLight,
         },
       }}
     >
       <Tabs.Screen
         name="index"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="◉" label="TODAY" focused={focused} />
-          ),
-        }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="◉" label="TODAY" focused={focused} /> }}
       />
       <Tabs.Screen
         name="habits"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="☰" label="HABITS" focused={focused} />
-          ),
-        }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="☰" label="HABITS" focused={focused} /> }}
       />
       <Tabs.Screen
         name="stats"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="◔" label="STATS" focused={focused} />
-          ),
-        }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="◔" label="STATS" focused={focused} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <TabIcon icon="○" label="ME" focused={focused} />
-          ),
-        }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="○" label="ME" focused={focused} /> }}
       />
     </Tabs>
   );
 }
-

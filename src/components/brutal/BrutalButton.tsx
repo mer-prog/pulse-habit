@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Text, Pressable, ActivityIndicator, ViewStyle, StyleProp } from 'react-native';
-import { brutal, fontFamily } from '@/constants/theme';
+import { brutal, fontFamily, useTheme } from '@/constants/theme';
 import { OffsetShadow } from './OffsetShadow';
 import { hapticLight } from '@/lib/haptics';
 
@@ -28,18 +28,10 @@ export function BrutalButton({
   style,
 }: BrutalButtonProps) {
   const [pressed, setPressed] = useState(false);
+  const { colors } = useTheme();
 
-  const padding = {
-    sm: { h: 16, v: 8 },
-    md: { h: 20, v: 10 },
-    lg: { h: 28, v: 14 },
-  }[size];
-
-  const fontSize = {
-    sm: 12,
-    md: 14,
-    lg: 16,
-  }[size];
+  const padding = { sm: { h: 16, v: 8 }, md: { h: 20, v: 10 }, lg: { h: 28, v: 14 } }[size];
+  const fontSize = { sm: 12, md: 14, lg: 16 }[size];
 
   const handlePress = async () => {
     if (disabled || loading) return;
@@ -61,7 +53,7 @@ export function BrutalButton({
         style={{
           backgroundColor: color,
           borderWidth: brutal.borderWidth.md,
-          borderColor: brutal.ink,
+          borderColor: colors.border,
           paddingHorizontal: padding.h,
           paddingVertical: padding.v,
           alignItems: 'center',
@@ -89,4 +81,3 @@ export function BrutalButton({
     </OffsetShadow>
   );
 }
-
