@@ -59,11 +59,23 @@ const darkPalette = {
   border: '#555555',
   borderLight: '#2A2A2A',
   shadow: '#000000',
-  white: '#E8E4DC',
+  white: '#0D0D0D',      // inverted: dark text on light (ink) backgrounds
   dotGrid: '#FFFFFF',
 } as const;
 
-export type ThemeColors = typeof lightPalette;
+export type ThemeColors = {
+  bg: string;
+  bgAlt: string;
+  ink: string;
+  inkSoft: string;
+  inkMuted: string;
+  card: string;
+  border: string;
+  borderLight: string;
+  shadow: string;
+  white: string;
+  dotGrid: string;
+};
 
 // ─── useTheme hook ────────────────────────────────────
 export function useTheme() {
@@ -101,3 +113,4 @@ export const fontFamily = {
   mono: 'SpaceMono_700Bold',
   monoRegular: 'SpaceMono_400Regular',
 } as const;
+
