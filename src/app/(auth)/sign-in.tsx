@@ -2,20 +2,21 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+
+import { BrutalInput } from '@/components/brutal/BrutalInput';
+import { BrutalButton } from '@/components/brutal/BrutalButton';
+import { OffsetShadow } from '@/components/brutal/OffsetShadow';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useToastStore } from '@/stores/toastStore';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/constants/colors';
+import { brutal, fontFamily } from '@/constants/theme';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function SignInScreen() {
     if (!email.trim()) newErrors.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Invalid email';
     if (!password.trim()) newErrors.password = 'Password is required';
-    else if (password.length < 6) newErrors.password = 'Password must be at least 6 characters';
+    else if (password.length < 6) newErrors.password = 'Min 6 characters';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -53,7 +54,6 @@ export default function SignInScreen() {
           });
         }
       } else {
-        // Offline mode — create local user
         setUser({
           id: 'local',
           email,
@@ -72,88 +72,221 @@ export default function SignInScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-slate-50 dark:bg-slate-900"
+      style={{ flex: 1, backgroundColor: brutal.bg }}
     >
+      {/* Corner decorations */}
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: 0,
+          height: 0,
+          borderTopWidth: 80,
+          borderTopColor: brutal.accent,
+          borderLeftWidth: 80,
+          borderLeftColor: 'transparent',
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          width: 0,
+          height: 0,
+          borderBottomWidth: 60,
+          borderBottomColor: brutal.ink,
+          borderRightWidth: 60,
+          borderRightColor: 'transparent',
+        }}
+      />
+
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
         keyboardShouldPersistTaps="handled"
       >
         <Animated.View
           entering={FadeInDown.delay(100).duration(500)}
-          className="px-8"
+          style={{ paddingHorizontal: 24 }}
         >
           {/* Logo */}
-          <View className="mb-8 items-center">
-            <View className="mb-4 h-20 w-20 items-center justify-center rounded-2xl bg-indigo-500">
-              <Ionicons name="pulse" size={40} color="#FFFFFF" />
+          <View style={{ alignItems: 'center', marginBottom: 36 }}>
+            <OffsetShadow offset={brutal.shadowOffset}>
+              <View
+                style={{
+                  width: 72,
+                  height: 72,
+                  backgroundColor: brutal.accent,
+                  borderWidth: 3,
+                  borderColor: brutal.ink,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Text style={{ fontSize: 36, color: '#FFFFFF' }}>⚡</Text>
+              </View>
+            </OffsetShadow>
+
+            <View style={{ flexDirection: 'row', marginTop: 16 }}>
+              <Text
+                style={{
+                  fontSize: 36,
+                  fontFamily: fontFamily.heading,
+                  fontWeight: '700',
+                  color: brutal.ink,
+                  letterSpacing: -1,
+                }}
+              >
+                PULSE
+              </Text>
+              <Text
+                style={{
+                  fontSize: 36,
+                  fontFamily: fontFamily.heading,
+                  fontWeight: '700',
+                  color: brutal.accent,
+                  letterSpacing: -1,
+                }}
+              >
+                HABIT
+              </Text>
             </View>
-            <Text className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              PulseHabit
-            </Text>
-            <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Smart Habit & Streak Tracker
+            <Text
+              style={{
+                fontSize: brutal.fontSize.md,
+                fontFamily: fontFamily.mono,
+                fontWeight: '700',
+                color: brutal.inkMuted,
+                textTransform: 'uppercase',
+                letterSpacing: 1.2,
+                marginTop: 4,
+              }}
+            >
+              SMART HABIT & STREAK TRACKER
             </Text>
           </View>
 
           {/* Form */}
-          <Input
-            label="Email"
+          <BrutalInput
+            label="EMAIL"
             placeholder="you@example.com"
             value={email}
-            onChangeText={setEmail}
-            error={errors.email}
+            onChange={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            error={errors.email}
           />
-          <Input
-            label="Password"
-            placeholder="Enter your password"
+          <BrutalInput
+            label="PASSWORD"
+            placeholder="••••••••"
             value={password}
-            onChangeText={setPassword}
-            error={errors.password}
+            onChange={setPassword}
             secureTextEntry
+            error={errors.password}
           />
 
-          <Button
-            title="Sign In"
-            onPress={handleSignIn}
-            loading={loading}
-            fullWidth
-          />
-
-          {/* Social login UI (portfolio placeholder) */}
-          <View className="my-6 flex-row items-center">
-            <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-            <Text className="mx-4 text-sm text-slate-400">or continue with</Text>
-            <View className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
+          <View style={{ marginTop: 4, marginBottom: 24 }}>
+            <BrutalButton
+              title="SIGN IN →"
+              onPress={handleSignIn}
+              loading={loading}
+              fullWidth
+              size="lg"
+            />
           </View>
 
-          <View className="flex-row justify-center gap-4">
-            {(['logo-google', 'logo-apple', 'logo-github'] as const).map((icon) => (
-              <TouchableOpacity
-                key={icon}
-                className="h-12 w-12 items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700"
-                activeOpacity={0.7}
-              >
-                <Ionicons name={icon} size={24} color={colors.primary} />
-              </TouchableOpacity>
+          {/* Divider */}
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              marginBottom: 20,
+            }}
+          >
+            <View style={{ flex: 1, height: 2, backgroundColor: brutal.ink }} />
+            <Text
+              style={{
+                fontSize: brutal.fontSize.sm,
+                fontFamily: fontFamily.mono,
+                fontWeight: '700',
+                color: brutal.inkMuted,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+              }}
+            >
+              OR
+            </Text>
+            <View style={{ flex: 1, height: 2, backgroundColor: brutal.ink }} />
+          </View>
+
+          {/* Social buttons */}
+          <View
+            style={{ flexDirection: 'row', gap: 8, marginBottom: 28 }}
+          >
+            {['G', '🍎', '⌨'].map((icon, i) => (
+              <OffsetShadow key={i} offset={brutal.shadowOffsetSm} style={{ flex: 1 }}>
+                <View
+                  style={{
+                    height: 48,
+                    backgroundColor: '#FFFFFF',
+                    borderWidth: 2,
+                    borderColor: brutal.ink,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 20,
+                      fontFamily: fontFamily.heading,
+                      fontWeight: '700',
+                    }}
+                  >
+                    {icon}
+                  </Text>
+                </View>
+              </OffsetShadow>
             ))}
           </View>
 
           {/* Sign up link */}
-          <View className="mt-8 flex-row justify-center">
-            <Text className="text-sm text-slate-500">
-              {"Don't have an account? "}
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 13,
+                fontFamily: fontFamily.body,
+                color: brutal.inkMuted,
+              }}
+            >
+              No account?{' '}
             </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/sign-up')}>
-              <Text className="text-sm font-semibold text-indigo-500">
-                Sign Up
+            <Pressable onPress={() => router.push('/(auth)/sign-up')}>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontFamily: fontFamily.heading,
+                  fontWeight: '700',
+                  color: brutal.accent,
+                  textDecorationLine: 'underline',
+                  textDecorationStyle: 'solid',
+                }}
+              >
+                SIGN UP
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+

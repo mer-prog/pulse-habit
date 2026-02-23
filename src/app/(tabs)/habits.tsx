@@ -1,164 +1,178 @@
-import { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import { useEffect, useMemo } from 'react';
+import { View, Text, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { Header } from '@/components/common/Header';
-import { HabitCard } from '@/components/habits/HabitCard';
-import { EmptyState } from '@/components/common/EmptyState';
-import { CategoryBadge } from '@/components/habits/CategoryBadge';
+import Animated, { FadeIn } from 'react-native-reanimated';
+
 import { useHabits } from '@/hooks/useHabits';
-import { CATEGORIES } from '@/constants/categories';
-import { hapticWarning } from '@/lib/haptics';
-import type { HabitCategory, HabitWithStreak } from '@/types';
+import { BlackTag, BrutalTag } from '@/components/brutal';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { brutal, fontFamily, categoryColors } from '@/constants/theme';
 
 export default function HabitsScreen() {
   const router = useRouter();
-  const { habits, toggleCompletion, archiveHabit, deleteHabit } = useHabits();
-  const [selectedCategory, setSelectedCategory] = useState<HabitCategory | 'all'>('all');
-  const [showArchived, setShowArchived] = useState(false);
+  const { habits, isLoading, loadHabits } = useHabits();
 
-  const allHabits = useHabits().habits;
+  useEffect(() => {
+    void loadHabits();
+  }, [loadHabits]);
 
-  const filteredHabits = useMemo(() => {
-    let list = allHabits;
-    if (selectedCategory !== 'all') {
-      list = list.filter((h) => h.category === selectedCategory);
-    }
-    return list;
-  }, [allHabits, selectedCategory]);
+  const categories = useMemo(() => {
+    return [...new Set(habits.map((h) => h.category))];
+  }, [habits]);
 
-  const handleLongPress = useCallback(
-    (habit: HabitWithStreak) => {
-      Alert.alert(habit.name, 'Choose an action', [
-        {
-          text: 'Archive',
-          onPress: async () => {
-            await hapticWarning();
-            await archiveHabit(habit.id);
-          },
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            Alert.alert('Delete Habit', 'This action cannot be undone.', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Delete',
-                style: 'destructive',
-                onPress: async () => {
-                  await hapticWarning();
-                  await deleteHabit(habit.id);
-                },
-              },
-            ]);
-          },
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    },
-    [archiveHabit, deleteHabit]
-  );
+  if (isLoading) return <LoadingSpinner fullScreen />;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
-      <Header
-        title="Habits"
-        subtitle={`${filteredHabits.length} habits`}
-        right={
-          <TouchableOpacity
-            onPress={() => router.push('/habit/new')}
-            className="h-10 w-10 items-center justify-center rounded-full bg-indigo-500"
-          >
-            <Ionicons name="add" size={22} color="#FFFFFF" />
-          </TouchableOpacity>
-        }
-      />
-
-      {/* Category filter */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 12, gap: 8 }}
+    <SafeAreaView style={{ flex: 1, backgroundColor: brutal.bg }} edges={['top']}>
+      <Animated.ScrollView
+        entering={FadeIn.duration(400)}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
       >
-        <TouchableOpacity
-          onPress={() => setSelectedCategory('all')}
-          className={`rounded-full px-4 py-2 ${
-            selectedCategory === 'all'
-              ? 'bg-indigo-500'
-              : 'bg-white dark:bg-slate-800'
-          }`}
-        >
+        {/* Title */}
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 16, marginBottom: 24 }}>
           <Text
-            className={`text-sm font-medium ${
-              selectedCategory === 'all'
-                ? 'text-white'
-                : 'text-slate-600 dark:text-slate-300'
-            }`}
+            style={{
+              fontSize: brutal.fontSize['5xl'],
+              fontFamily: fontFamily.heading,
+              fontWeight: '700',
+              color: brutal.ink,
+              letterSpacing: -1.5,
+            }}
           >
-            All
+            HABITS
           </Text>
-        </TouchableOpacity>
-        {CATEGORIES.map((cat) => (
-          <TouchableOpacity
-            key={cat.key}
-            onPress={() => setSelectedCategory(cat.key)}
-            className={`rounded-full px-4 py-2 ${
-              selectedCategory === cat.key
-                ? 'bg-indigo-500'
-                : 'bg-white dark:bg-slate-800'
-            }`}
+          <Text
+            style={{
+              fontSize: brutal.fontSize['5xl'],
+              fontFamily: fontFamily.heading,
+              fontWeight: '700',
+              color: brutal.accent,
+            }}
           >
-            <Text
-              className={`text-sm font-medium ${
-                selectedCategory === cat.key
-                  ? 'text-white'
-                  : 'text-slate-600 dark:text-slate-300'
-              }`}
-            >
-              {cat.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+            .
+          </Text>
+        </View>
 
-      {/* Habit List */}
-      {filteredHabits.length === 0 ? (
-        <EmptyState
-          icon="search-outline"
-          title="No habits found"
-          description={
-            selectedCategory !== 'all'
-              ? 'No habits in this category'
-              : 'Create your first habit to get started!'
-          }
-          actionLabel="Create Habit"
-          onAction={() => router.push('/habit/new')}
-        />
-      ) : (
-        <FlatList
-          data={filteredHabits}
-          renderItem={({ item }) => (
-            <HabitCard
-              habit={item}
-              onToggle={() => void toggleCompletion(item.id)}
-              onPress={() => router.push(`/habit/${item.id}`)}
-              onLongPress={() => handleLongPress(item)}
-            />
-          )}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+        {/* Filter tags */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+          <BlackTag>{`ALL (${habits.length})`}</BlackTag>
+          {categories.map((cat) => (
+            <BrutalTag key={cat} color={categoryColors[cat]}>
+              {cat}
+            </BrutalTag>
+          ))}
+        </View>
+
+        {/* Habit list with index */}
+        <View>
+          {habits.map((h, i) => {
+            const catColor = categoryColors[h.category] || brutal.inkMuted;
+            const streak = h.streak?.current_streak ?? 0;
+
+            return (
+              <Pressable
+                key={h.id}
+                onPress={() => router.push(`/habit/${h.id}`)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 14,
+                  paddingVertical: 14,
+                  borderBottomWidth: 2,
+                  borderBottomColor: brutal.ink,
+                  borderTopWidth: i === 0 ? 2 : 0,
+                  borderTopColor: brutal.ink,
+                }}
+              >
+                {/* Index number (outlined) */}
+                <Text
+                  style={{
+                    fontSize: 28,
+                    fontFamily: fontFamily.heading,
+                    fontWeight: '700',
+                    color: brutal.bgAlt,
+                    width: 36,
+                    textAlign: 'right',
+                    // Note: -webkit-text-stroke doesn't work in RN
+                    // We'll use a slightly visible color instead
+                    opacity: 0.3,
+                  }}
+                >
+                  {String(i + 1).padStart(2, '0')}
+                </Text>
+
+                <Text style={{ fontSize: 28 }}>{h.icon}</Text>
+
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      fontFamily: fontFamily.heading,
+                      fontWeight: '700',
+                      color: brutal.ink,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {h.name}
+                  </Text>
+                  <View style={{ flexDirection: 'row', gap: 6, marginTop: 3 }}>
+                    <BrutalTag color={catColor} small>
+                      {h.category}
+                    </BrutalTag>
+                    {h.reminder_time && (
+                      <Text
+                        style={{
+                          fontSize: brutal.fontSize.sm,
+                          fontFamily: fontFamily.monoRegular,
+                          color: brutal.inkMuted,
+                        }}
+                      >
+                        {h.reminder_time}
+                      </Text>
+                    )}
+                  </View>
+                </View>
+
+                {streak > 0 && (
+                  <View
+                    style={{
+                      borderWidth: 2,
+                      borderColor: brutal.accent,
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      backgroundColor: `${brutal.accent}10`,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontFamily: fontFamily.mono,
+                        fontWeight: '700',
+                        color: brutal.accent,
+                      }}
+                    >
+                      🔥{streak}
+                    </Text>
+                  </View>
+                )}
+
+                <Text
+                  style={{
+                    fontSize: 20,
+                    fontFamily: fontFamily.monoRegular,
+                    color: brutal.inkMuted,
+                  }}
+                >
+                  →
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
+

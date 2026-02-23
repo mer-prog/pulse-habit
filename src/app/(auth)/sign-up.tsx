@@ -2,19 +2,21 @@ import { useState } from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Input } from '@/components/ui/Input';
-import { Button } from '@/components/ui/Button';
+
+import { BrutalInput } from '@/components/brutal/BrutalInput';
+import { BrutalButton } from '@/components/brutal/BrutalButton';
+import { OffsetShadow } from '@/components/brutal/OffsetShadow';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useToastStore } from '@/stores/toastStore';
-import { Ionicons } from '@expo/vector-icons';
+import { brutal, fontFamily } from '@/constants/theme';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -33,7 +35,7 @@ export default function SignUpScreen() {
     if (!email.trim()) newErrors.email = 'Email is required';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Invalid email';
     if (!password.trim()) newErrors.password = 'Password is required';
-    else if (password.length < 6) newErrors.password = 'Must be at least 6 characters';
+    else if (password.length < 6) newErrors.password = 'Min 6 characters';
     if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -58,16 +60,11 @@ export default function SignUpScreen() {
             name,
             avatar_url: null,
           });
-          addToast('success', 'Account created successfully!');
+          addToast('success', 'Account created!');
         }
       } else {
-        setUser({
-          id: 'local',
-          email,
-          name,
-          avatar_url: null,
-        });
-        addToast('success', 'Account created in offline mode');
+        setUser({ id: 'local', email, name, avatar_url: null });
+        addToast('success', 'Account created (offline)');
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Sign up failed';
@@ -80,83 +77,134 @@ export default function SignUpScreen() {
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      className="flex-1 bg-slate-50 dark:bg-slate-900"
+      style={{ flex: 1, backgroundColor: brutal.bg }}
     >
+      {/* Corner decorations */}
+      <View
+        style={{
+          position: 'absolute', top: 0, right: 0,
+          width: 0, height: 0,
+          borderTopWidth: 80, borderTopColor: brutal.success,
+          borderLeftWidth: 80, borderLeftColor: 'transparent',
+        }}
+      />
+      <View
+        style={{
+          position: 'absolute', bottom: 0, left: 0,
+          width: 0, height: 0,
+          borderBottomWidth: 60, borderBottomColor: brutal.ink,
+          borderRightWidth: 60, borderRightColor: 'transparent',
+        }}
+      />
+
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
         keyboardShouldPersistTaps="handled"
       >
         <Animated.View
           entering={FadeInDown.delay(100).duration(500)}
-          className="px-8"
+          style={{ paddingHorizontal: 24 }}
         >
           {/* Header */}
-          <View className="mb-8 items-center">
-            <View className="mb-4 h-20 w-20 items-center justify-center rounded-2xl bg-indigo-500">
-              <Ionicons name="pulse" size={40} color="#FFFFFF" />
+          <View style={{ alignItems: 'center', marginBottom: 32 }}>
+            <View style={{ flexDirection: 'row' }}>
+              <Text
+                style={{
+                  fontSize: 32, fontFamily: fontFamily.heading,
+                  fontWeight: '700', color: brutal.ink, letterSpacing: -1,
+                }}
+              >
+                CREATE
+              </Text>
+              <Text
+                style={{
+                  fontSize: 32, fontFamily: fontFamily.heading,
+                  fontWeight: '700', color: brutal.accent, letterSpacing: -1,
+                }}
+              >
+                .
+              </Text>
             </View>
-            <Text className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              Create Account
-            </Text>
-            <Text className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              Start tracking your habits today
+            <Text
+              style={{
+                fontSize: brutal.fontSize.md, fontFamily: fontFamily.mono,
+                fontWeight: '700', color: brutal.inkMuted,
+                textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 4,
+              }}
+            >
+              START TRACKING YOUR HABITS
             </Text>
           </View>
 
           {/* Form */}
-          <Input
-            label="Name"
+          <BrutalInput
+            label="NAME"
             placeholder="Your name"
             value={name}
-            onChangeText={setName}
-            error={errors.name}
+            onChange={setName}
             autoCapitalize="words"
+            error={errors.name}
           />
-          <Input
-            label="Email"
+          <BrutalInput
+            label="EMAIL"
             placeholder="you@example.com"
             value={email}
-            onChangeText={setEmail}
-            error={errors.email}
+            onChange={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
+            error={errors.email}
           />
-          <Input
-            label="Password"
+          <BrutalInput
+            label="PASSWORD"
             placeholder="At least 6 characters"
             value={password}
-            onChangeText={setPassword}
-            error={errors.password}
+            onChange={setPassword}
             secureTextEntry
+            error={errors.password}
           />
-          <Input
-            label="Confirm Password"
+          <BrutalInput
+            label="CONFIRM PASSWORD"
             placeholder="Re-enter password"
             value={confirmPassword}
-            onChangeText={setConfirmPassword}
-            error={errors.confirmPassword}
+            onChange={setConfirmPassword}
             secureTextEntry
+            error={errors.confirmPassword}
           />
 
-          <Button
-            title="Create Account"
-            onPress={handleSignUp}
-            loading={loading}
-            fullWidth
-          />
+          <View style={{ marginTop: 4, marginBottom: 28 }}>
+            <BrutalButton
+              title="CREATE ACCOUNT →"
+              onPress={handleSignUp}
+              loading={loading}
+              fullWidth
+              size="lg"
+              color={brutal.success}
+            />
+          </View>
 
           {/* Sign in link */}
-          <View className="mt-8 flex-row justify-center">
-            <Text className="text-sm text-slate-500">Already have an account? </Text>
-            <TouchableOpacity onPress={() => router.back()}>
-              <Text className="text-sm font-semibold text-indigo-500">
-                Sign In
+          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+            <Text
+              style={{ fontSize: 13, fontFamily: fontFamily.body, color: brutal.inkMuted }}
+            >
+              Already have an account?{' '}
+            </Text>
+            <Pressable onPress={() => router.back()}>
+              <Text
+                style={{
+                  fontSize: 13, fontFamily: fontFamily.heading,
+                  fontWeight: '700', color: brutal.accent,
+                  textDecorationLine: 'underline', textDecorationStyle: 'solid',
+                }}
+              >
+                SIGN IN
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
+

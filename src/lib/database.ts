@@ -605,3 +605,15 @@ function getDateString(date: Date): string {
 }
 
 export { generateId, getDateString, parseDate, addDays };
+
+
+export async function purgeExpiredSyncItems(
+  db: SQLiteDatabase
+): Promise<number> {
+  const result = await db.runAsync(
+    'DELETE FROM sync_queue WHERE retry_count >= max_retries'
+  );
+  return result.changes;
+}
+
+

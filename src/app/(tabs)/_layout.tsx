@@ -1,61 +1,99 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/constants/colors';
+import { View, Text } from 'react-native';
+import { brutal, fontFamily } from '@/constants/theme';
+
+function TabIcon({
+  icon,
+  label,
+  focused,
+}: {
+  icon: string;
+  label: string;
+  focused: boolean;
+}) {
+  return (
+    <View
+      style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: 6,
+        gap: 2,
+      }}
+    >
+      <Text style={{ fontSize: 18, color: focused ? brutal.accent : brutal.inkMuted }}>
+        {icon}
+      </Text>
+      <Text
+        style={{
+          fontSize: 9,
+          fontFamily: fontFamily.mono,
+          fontWeight: '700',
+          letterSpacing: 1,
+          color: focused ? brutal.white : brutal.inkMuted,
+        }}
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: '#94A3B8',
+        tabBarShowLabel: false,
         tabBarStyle: {
-          borderTopWidth: 0,
+          backgroundColor: brutal.bg,
+          borderTopWidth: 3,
+          borderTopColor: brutal.ink,
+          height: 68,
+          paddingBottom: 0,
           elevation: 0,
           shadowOpacity: 0,
         },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+        tabBarActiveBackgroundColor: brutal.ink,
+        tabBarInactiveBackgroundColor: 'transparent',
+        tabBarItemStyle: {
+          borderRightWidth: 1,
+          borderRightColor: brutal.borderLight,
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Today',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="today" size={size} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="◉" label="TODAY" focused={focused} />
           ),
         }}
       />
       <Tabs.Screen
         name="habits"
         options={{
-          title: 'Habits',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="☰" label="HABITS" focused={focused} />
           ),
         }}
       />
       <Tabs.Screen
         name="stats"
         options={{
-          title: 'Stats',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="stats-chart" size={size} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="◔" label="STATS" focused={focused} />
           ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person" size={size} color={color} />
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon="○" label="ME" focused={focused} />
           ),
         }}
       />
     </Tabs>
   );
 }
+

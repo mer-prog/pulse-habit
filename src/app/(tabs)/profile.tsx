@@ -1,227 +1,284 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { Header } from '@/components/common/Header';
-import { Card } from '@/components/ui/Card';
+import Animated, { FadeIn } from 'react-native-reanimated';
+
 import { useAuthStore } from '@/stores/authStore';
-import { useSettingsStore } from '@/stores/settingsStore';
 import { useHabitStore } from '@/stores/habitStore';
-import { useSync } from '@/hooks/useSync';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
-import { colors } from '@/constants/colors';
-import { APP_VERSION } from '@/constants/config';
-import type { ThemeMode } from '@/types';
+import {
+  BrutalButton,
+  BrutalTag,
+  OffsetShadow,
+  StatBox,
+  BlackTag,
+} from '@/components/brutal';
+import { brutal, fontFamily } from '@/constants/theme';
 
 export default function ProfileScreen() {
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
-  const themeMode = useSettingsStore((s) => s.themeMode);
-  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
-  const lastSyncAt = useSettingsStore((s) => s.lastSyncAt);
   const habits = useHabitStore((s) => s.habits);
   const streaks = useHabitStore((s) => s.streaks);
-  const { syncStatus, sync } = useSync();
 
-  const totalCompletions = Object.values(
-    useHabitStore.getState().completions
-  ).reduce((sum, c) => sum + c.length, 0);
+  const activeHabits = habits.filter((h) => !h.is_archived);
+
+  // Compute journey stats
+  const totalCompletions = Object.values(useHabitStore.getState().completions)
+    .flat().length;
 
   const longestStreak = Math.max(
     0,
-    ...Object.values(streaks).map((s) => s.longest_streak)
+    ...Object.values(streaks).map((s) => s.longest_streak),
   );
 
-  const activeDays = new Set(
-    Object.values(useHabitStore.getState().completions)
-      .flatMap((c) => c.map((comp) => comp.completed_date))
-  ).size;
-
-  const handleSignOut = async () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: async () => {
-          if (isSupabaseConfigured()) {
-            await supabase.auth.signOut();
-          }
-          signOut();
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: () => void signOut(),
         },
-      },
-    ]);
+      ],
+    );
   };
 
-  const themeOptions: { mode: ThemeMode; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { mode: 'light', label: 'Light', icon: 'sunny' },
-    { mode: 'dark', label: 'Dark', icon: 'moon' },
-    { mode: 'system', label: 'System', icon: 'phone-portrait' },
-  ];
-
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
-      <Header title="Profile" />
-
-      <ScrollView
+    <SafeAreaView style={{ flex: 1, backgroundColor: brutal.bg }} edges={['top']}>
+      <Animated.ScrollView
+        entering={FadeIn.duration(400)}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
       >
-        {/* User Info */}
-        <Card className="mb-4 items-center">
-          <View className="mb-3 h-16 w-16 items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-900/30">
-            <Ionicons name="person" size={32} color={colors.primary} />
-          </View>
-          <Text className="text-lg font-bold text-slate-900 dark:text-slate-100">
-            {user?.name ?? 'User'}
+        {/* Title */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'baseline',
+            marginTop: 16,
+            marginBottom: 28,
+          }}
+        >
+          <Text
+            style={{
+              fontSize: brutal.fontSize['5xl'],
+              fontFamily: fontFamily.heading,
+              fontWeight: '700',
+              color: brutal.ink,
+              letterSpacing: -1.5,
+            }}
+          >
+            PROFILE
           </Text>
-          <Text className="text-sm text-slate-500 dark:text-slate-400">
-            {user?.email ?? ''}
+          <Text
+            style={{
+              fontSize: brutal.fontSize['5xl'],
+              fontFamily: fontFamily.heading,
+              fontWeight: '700',
+              color: brutal.accent,
+            }}
+          >
+            .
           </Text>
-        </Card>
+        </View>
 
-        {/* Stats Summary */}
-        <Card className="mb-4">
-          <Text className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">
-            Your Journey
-          </Text>
-          <View className="flex-row">
-            <StatItem label="Completions" value={totalCompletions} icon="checkmark-circle" />
-            <StatItem label="Longest Streak" value={longestStreak} icon="flame" />
-            <StatItem label="Active Days" value={activeDays} icon="calendar" />
-          </View>
-        </Card>
+        {/* User card */}
+        <OffsetShadow offset={brutal.shadowOffset}>
+          <View
+            style={{
+              borderWidth: 3,
+              borderColor: brutal.ink,
+              backgroundColor: '#fff',
+              padding: 20,
+              alignItems: 'center',
+              marginBottom: 20,
+            }}
+          >
+            {/* Avatar */}
+            <View
+              style={{
+                width: 72,
+                height: 72,
+                borderWidth: 3,
+                borderColor: brutal.ink,
+                backgroundColor: brutal.accent,
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 12,
+              }}
+            >
+              <Text style={{ fontSize: 32 }}>👤</Text>
+            </View>
 
-        {/* Theme Setting */}
-        <Card className="mb-4">
-          <Text className="mb-3 text-base font-semibold text-slate-900 dark:text-slate-100">
-            Theme
-          </Text>
-          <View className="flex-row gap-2">
-            {themeOptions.map((opt) => (
-              <TouchableOpacity
-                key={opt.mode}
-                onPress={() => setThemeMode(opt.mode)}
-                className={`flex-1 flex-row items-center justify-center gap-1.5 rounded-xl py-2.5 ${
-                  themeMode === opt.mode
-                    ? 'bg-indigo-500'
-                    : 'bg-slate-100 dark:bg-slate-700'
-                }`}
-              >
-                <Ionicons
-                  name={opt.icon}
-                  size={16}
-                  color={themeMode === opt.mode ? '#FFFFFF' : '#64748B'}
-                />
-                <Text
-                  className={`text-sm font-medium ${
-                    themeMode === opt.mode
-                      ? 'text-white'
-                      : 'text-slate-600 dark:text-slate-300'
-                  }`}
+            <Text
+              style={{
+                fontSize: 20,
+                fontFamily: fontFamily.heading,
+                fontWeight: '700',
+                color: brutal.ink,
+              }}
+            >
+              {user?.name ?? 'User'}
+            </Text>
+            <Text
+              style={{
+                fontSize: 12,
+                fontFamily: fontFamily.monoRegular,
+                color: brutal.inkMuted,
+                marginTop: 2,
+              }}
+            >
+              {user?.email ?? ''}
+            </Text>
+          </View>
+        </OffsetShadow>
+
+        {/* Journey stats */}
+        <OffsetShadow offset={brutal.shadowOffsetSm}>
+          <View
+            style={{
+              borderWidth: 2,
+              borderColor: brutal.ink,
+              backgroundColor: '#fff',
+              padding: 14,
+              marginBottom: 16,
+            }}
+          >
+            <View style={{ marginBottom: 12 }}>
+              <BlackTag>YOUR JOURNEY</BlackTag>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <StatBox label="COMPLETIONS" value={totalCompletions} accent={brutal.success} />
+              <StatBox label="LONGEST" value={`${longestStreak}d`} accent={brutal.accent} />
+              <StatBox label="ACTIVE" value={activeHabits.length} accent={brutal.indigo} />
+            </View>
+          </View>
+        </OffsetShadow>
+
+        {/* Theme selector */}
+        <OffsetShadow offset={brutal.shadowOffsetSm}>
+          <View
+            style={{
+              borderWidth: 2,
+              borderColor: brutal.ink,
+              backgroundColor: '#fff',
+              padding: 14,
+              marginBottom: 16,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: brutal.fontSize.sm,
+                fontFamily: fontFamily.mono,
+                fontWeight: '700',
+                color: brutal.inkSoft,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                marginBottom: 10,
+              }}
+            >
+              THEME
+            </Text>
+            <View style={{ flexDirection: 'row' }}>
+              {[
+                { label: '☀ LIGHT', active: true },
+                { label: '🌙 DARK', active: false },
+                { label: '⚙ SYS', active: false },
+              ].map((t, i) => (
+                <Pressable
+                  key={i}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 10,
+                    borderWidth: 2,
+                    borderColor: brutal.ink,
+                    borderLeftWidth: i > 0 ? 0 : 2,
+                    backgroundColor: t.active ? brutal.ink : '#fff',
+                    alignItems: 'center',
+                  }}
                 >
-                  {opt.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={{
+                      fontSize: brutal.fontSize.sm,
+                      fontFamily: fontFamily.mono,
+                      fontWeight: '700',
+                      color: t.active ? brutal.white : brutal.ink,
+                      letterSpacing: 0.6,
+                    }}
+                  >
+                    {t.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
           </View>
-        </Card>
+        </OffsetShadow>
 
-        {/* Sync Status */}
-        <Card className="mb-4">
-          <View className="flex-row items-center justify-between">
+        {/* Sync status */}
+        <OffsetShadow offset={brutal.shadowOffsetSm}>
+          <View
+            style={{
+              borderWidth: 2,
+              borderColor: brutal.ink,
+              backgroundColor: '#fff',
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: 24,
+            }}
+          >
             <View>
-              <Text className="text-base font-semibold text-slate-900 dark:text-slate-100">
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontFamily: fontFamily.heading,
+                  fontWeight: '700',
+                  color: brutal.ink,
+                }}
+              >
                 Data Sync
               </Text>
-              <Text className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                {syncStatus === 'syncing'
-                  ? 'Syncing...'
-                  : syncStatus === 'error'
-                  ? 'Sync failed'
-                  : syncStatus === 'offline'
-                  ? 'Offline mode'
-                  : lastSyncAt
-                  ? `Last synced: ${new Date(lastSyncAt).toLocaleString()}`
-                  : 'Not synced yet'}
+              <Text
+                style={{
+                  fontSize: brutal.fontSize.sm,
+                  fontFamily: fontFamily.monoRegular,
+                  color: brutal.inkMuted,
+                  marginTop: 2,
+                }}
+              >
+                SUPABASE CONNECTED
               </Text>
             </View>
-            <TouchableOpacity
-              onPress={() => void sync()}
-              className="rounded-lg bg-slate-100 p-2 dark:bg-slate-700"
-            >
-              <Ionicons name="sync" size={20} color={colors.primary} />
-            </TouchableOpacity>
+            <BrutalTag color={brutal.success}>SYNCED</BrutalTag>
           </View>
-        </Card>
+        </OffsetShadow>
 
-        {/* Dev tools */}
-        {__DEV__ && (
-          <Card className="mb-4">
-            <Text className="mb-2 text-xs font-medium uppercase text-slate-400">
-              Developer
-            </Text>
-            <TouchableOpacity
-              onPress={async () => {
-                const { seedDatabase } = await import('@/dev/seed');
-                const { useSQLiteContext } = await import('expo-sqlite');
-                Alert.alert(
-                  'Seed Data',
-                  'This will add demo habits and completions. Existing data will not be affected.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Seed',
-                      onPress: () => {
-                        // Seed needs DB context, which is handled in the seed module
-                        Alert.alert('Info', 'Use the seed function from the database context');
-                      },
-                    },
-                  ]
-                );
-              }}
-              className="flex-row items-center py-2"
-            >
-              <Ionicons name="flask" size={20} color={colors.warning} />
-              <Text className="ml-2 text-sm text-slate-700 dark:text-slate-300">
-                Reset & Seed Data
-              </Text>
-            </TouchableOpacity>
-          </Card>
-        )}
-
-        {/* Sign Out */}
-        <TouchableOpacity
+        {/* Sign out */}
+        <BrutalButton
+          title="SIGN OUT"
           onPress={handleSignOut}
-          className="mb-4 items-center rounded-2xl bg-white py-4 dark:bg-slate-800"
-        >
-          <Text className="font-semibold text-red-500">Sign Out</Text>
-        </TouchableOpacity>
+          color={brutal.rose}
+          fullWidth
+        />
 
         {/* Version */}
-        <Text className="text-center text-xs text-slate-400">
-          PulseHabit v{APP_VERSION}
+        <Text
+          style={{
+            textAlign: 'center',
+            marginTop: 20,
+            fontSize: brutal.fontSize.sm,
+            fontFamily: fontFamily.monoRegular,
+            color: brutal.inkMuted,
+          }}
+        >
+          PULSEHABIT v1.0.0
         </Text>
-      </ScrollView>
+      </Animated.ScrollView>
     </SafeAreaView>
   );
 }
 
-function StatItem({
-  label,
-  value,
-  icon,
-}: {
-  label: string;
-  value: number;
-  icon: keyof typeof Ionicons.glyphMap;
-}) {
-  return (
-    <View className="flex-1 items-center">
-      <Ionicons name={icon} size={20} color={colors.primary} />
-      <Text className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
-        {value}
-      </Text>
-      <Text className="text-xs text-slate-500 dark:text-slate-400">{label}</Text>
-    </View>
-  );
-}
