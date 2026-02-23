@@ -11,7 +11,7 @@ export function useNotifications() {
   const router = useRouter();
   const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
   const habits = useHabitStore((s) => s.habits);
-  const responseListener = useRef<any>();
+  const responseListener = useRef<any>(null);
   useEffect(() => {
     if (!Notifications) return;
     try {

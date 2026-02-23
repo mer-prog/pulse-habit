@@ -15,14 +15,19 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pulsehabit.app"
+      "bundleIdentifier": "com.pulsehabit.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "習慣の達成記録に写真を撮影するために使用します",
+        "NSPhotoLibraryUsageDescription": "習慣の達成記録に写真を添付するために使用します"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FF5722"
       },
-      "package": "com.pulsehabit.app"
+      "package": "com.pulsehabit.app",
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE"]
     },
     "web": {
       "bundler": "metro",
@@ -41,14 +46,26 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Allow PulseHabit to access your photos to attach them to habit completions.",
-          "cameraPermission": "Allow PulseHabit to access your camera to take photos for habit completions."
+          "photosPermission": "習慣の達成記録に写真を添付するために使用します",
+          "cameraPermission": "習慣の達成記録に写真を撮影するために使用します"
         }
       ],
       "expo-sqlite"
     ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    },
+    "owner": "mer-prog",
     "experiments": {
       "typedRoutes": true
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/"
     }
   }
 }
