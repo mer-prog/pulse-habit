@@ -226,7 +226,7 @@ export async function updateHabit(
   updates: Partial<Pick<Habit, 'name' | 'description' | 'icon' | 'color' | 'category' | 'frequency' | 'target_days' | 'reminder_time' | 'reminder_enabled' | 'is_archived' | 'sort_order'>>
 ): Promise<void> {
   const setClauses: string[] = [];
-  const values: unknown[] = [];
+  const values: (string | number | null)[] = [];
   const syncData: Record<string, unknown> = { id };
 
   if (updates.name !== undefined) { setClauses.push('name = ?'); values.push(updates.name); syncData.name = updates.name; }
