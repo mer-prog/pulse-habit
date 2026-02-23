@@ -1,62 +1,44 @@
-import '../../global.css';
-import { useEffect, Suspense } from 'react';
-import { useColorScheme } from 'react-native';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { SQLiteProvider } from 'expo-sqlite';
+import { useEffect } from 'react';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { SQLiteProvider } from 'expo-sqlite';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
-import { ToastContainer } from '@/components/common/Toast';
+import { View, ActivityIndicator } from 'react-native';
+import {
+  useFonts,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from '@expo-google-fonts/space-grotesk';
+import {
+  SpaceMono_400Regular,
+  SpaceMono_700Bold,
+} from '@expo-google-fonts/space-mono';
+import * as SplashScreen from 'expo-splash-screen';
+
 import { useAuthStore } from '@/stores/authStore';
 import { useSync } from '@/hooks/useSync';
-import { useSettingsStore } from '@/stores/settingsStore';
+import { ToastContainer } from '@/components/common/Toast';
 import { migrateDatabase } from '@/lib/database';
 import { DB_NAME } from '@/constants/config';
+import { brutal } from '@/constants/theme';
 
-function AuthGuard({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const isLoading = useAuthStore((s) => s.isLoading);
-  const initialize = useAuthStore((s) => s.initialize);
-  const segments = useSegments();
-  const router = useRouter();
-
-  // Supabase session check + onAuthStateChange listener
-  useEffect(() => {
-    initialize();
-  }, []);
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    const inAuthGroup = segments[0] === '(auth)';
-
-    if (!isAuthenticated && !inAuthGroup) {
-      router.replace('/(auth)/sign-in');
-    } else if (isAuthenticated && inAuthGroup) {
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated, isLoading, segments]);
-
-  if (isLoading) return <LoadingSpinner fullScreen />;
-
-  return <>{children}</>;
-}
+SplashScreen.preventAutoHideAsync();
 
 function SyncManager() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
   const { sync } = useSync();
 
-  // Sync when auth state is ready, with delayed retry for session restoration
   useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      console.log('[SyncManager] Auth ready, triggering sync...');
+      if (__DEV__) console.log('[SyncManager] Auth ready, triggering sync...');
       sync();
 
-      // Retry after 3s in case Supabase session wasn't restored yet
       const retryTimer = setTimeout(() => {
-        console.log('[SyncManager] Retry sync (session may be ready now)');
+        if (__DEV__) console.log('[SyncManager] Retry sync (session may be ready now)');
         sync();
       }, 3000);
 
@@ -67,46 +49,82 @@ function SyncManager() {
   return null;
 }
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const themeMode = useSettingsStore((s) => s.themeMode);
+function AppContent() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const initialize = useAuthStore((s) => s.initialize);
 
-  const effectiveTheme =
-    themeMode === 'system' ? colorScheme ?? 'light' : themeMode;
+  useEffect(() => {
+    void initialize();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: brutal.bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <ActivityIndicator size="large" color={brutal.accent} />
+      </View>
+    );
+  }
+
+  return (
+    <>
+      <Stack screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <Stack.Screen name="(tabs)" />
+        ) : (
+          <Stack.Screen name="(auth)" />
+        )}
+        <Stack.Screen
+          name="habit/[id]"
+          options={{ presentation: 'card' }}
+        />
+        <Stack.Screen
+          name="habit/new"
+          options={{ presentation: 'modal' }}
+        />
+      </Stack>
+      <SyncManager />
+      <ToastContainer />
+    </>
+  );
+}
+
+export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    SpaceMono_400Regular,
+    SpaceMono_700Bold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ErrorBoundary>
-        <Suspense fallback={<LoadingSpinner fullScreen />}>
-          <SQLiteProvider databaseName={DB_NAME} onInit={migrateDatabase} useSuspense>
-            <AuthGuard>
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  contentStyle: {
-                    backgroundColor:
-                      effectiveTheme === 'dark' ? '#0F172A' : '#F8FAFC',
-                  },
-                }}
-              >
-                <Stack.Screen name="(auth)" />
-                <Stack.Screen name="(tabs)" />
-                <Stack.Screen
-                  name="habit/[id]"
-                  options={{ presentation: 'card' }}
-                />
-                <Stack.Screen
-                  name="habit/new"
-                  options={{ presentation: 'modal' }}
-                />
-              </Stack>
-            </AuthGuard>
-            <SyncManager />
-            <ToastContainer />
-          </SQLiteProvider>
-        </Suspense>
-      </ErrorBoundary>
-      <StatusBar style={effectiveTheme === 'dark' ? 'light' : 'dark'} />
+      <SafeAreaProvider>
+        <SQLiteProvider databaseName={DB_NAME} onInit={migrateDatabase}>
+          <StatusBar style="dark" />
+          <AppContent />
+        </SQLiteProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
+

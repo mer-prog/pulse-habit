@@ -1,14 +1,15 @@
-import { useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { useEffect, useMemo, useCallback } from 'react';
+import { View, Text, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
-import { Ionicons } from '@expo/vector-icons';
-import { StreakRing } from '@/components/habits/StreakRing';
-import { HabitList } from '@/components/habits/HabitList';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import Svg, { Circle } from 'react-native-svg';
+
 import { useHabits } from '@/hooks/useHabits';
-import { colors } from '@/constants/colors';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { BrutalProgress, StatBox, BlackTag } from '@/components/brutal';
+import { BrutalHabitCard } from '@/components/habits/BrutalHabitCard';
+import { brutal, fontFamily } from '@/constants/theme';
 
 export default function TodayScreen() {
   const router = useRouter();
@@ -17,7 +18,6 @@ export default function TodayScreen() {
     isLoading,
     completedCount,
     totalCount,
-    completionRate,
     today,
     loadHabits,
     toggleCompletion,
@@ -27,67 +27,215 @@ export default function TodayScreen() {
     void loadHabits();
   }, [loadHabits]);
 
-  const dateDisplay = useMemo(() => {
-    const d = new Date();
-    return d.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    });
+  const dayName = useMemo(() => {
+    return new Date()
+      .toLocaleDateString('en-US', { weekday: 'long' })
+      .toUpperCase();
   }, [today]);
 
-  const allCompleted = totalCount > 0 && completedCount === totalCount;
+  // Placeholder stats — will be computed from real data
+  const bestStreak = useMemo(() => {
+    let max = 0;
+    for (const h of habits) {
+      if (h.streak && h.streak.current_streak > max) max = h.streak.current_streak;
+    }
+    return max > 0 ? `${max}d` : '0d';
+  }, [habits]);
 
   if (isLoading) return <LoadingSpinner fullScreen />;
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-50 dark:bg-slate-900" edges={['top']}>
-      {/* Header */}
-      <Animated.View entering={FadeIn.duration(400)} className="px-5 pt-4">
-        <Text className="text-sm text-slate-500 dark:text-slate-400">
-          {dateDisplay}
-        </Text>
-        <Text className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
-          Today
-        </Text>
-      </Animated.View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: brutal.bg }} edges={['top']}>
+      {/* Dot grid background */}
+      <DotGrid />
 
-      {/* Progress Ring */}
-      <Animated.View
-        entering={FadeIn.delay(200).duration(400)}
-        className="items-center py-6"
+      <Animated.ScrollView
+        entering={FadeIn.duration(400)}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
       >
-        <StreakRing
-          progress={completionRate}
-          size={140}
-          strokeWidth={10}
-          color={allCompleted ? colors.success : colors.primary}
-          showPulse={allCompleted}
-        />
-        <Text className="mt-3 text-base font-medium text-slate-700 dark:text-slate-300">
-          {completedCount}/{totalCount} completed
-        </Text>
-        {allCompleted && totalCount > 0 && (
-          <Text className="mt-1 text-sm font-semibold text-emerald-500">
-            All done! Great job! 🎉
-          </Text>
-        )}
-      </Animated.View>
+        {/* Date tag */}
+        <View style={{ marginTop: 8, marginBottom: 6 }}>
+          <BlackTag>{dayName}</BlackTag>
+        </View>
 
-      {/* Habit List */}
-      <HabitList
-        habits={habits}
-        onToggle={(id) => void toggleCompletion(id)}
-      />
+        {/* Title */}
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 20 }}>
+          <Text
+            style={{
+              fontSize: brutal.fontSize['6xl'],
+              fontFamily: fontFamily.heading,
+              fontWeight: '700',
+              color: brutal.ink,
+              lineHeight: 52,
+              letterSpacing: -1.5,
+            }}
+          >
+            TODAY
+          </Text>
+          <Text
+            style={{
+              fontSize: brutal.fontSize['6xl'],
+              fontFamily: fontFamily.heading,
+              fontWeight: '700',
+              color: brutal.accent,
+              lineHeight: 52,
+            }}
+          >
+            .
+          </Text>
+        </View>
+
+        {/* Progress bar */}
+        <View style={{ marginBottom: 20 }}>
+          <BrutalProgress done={completedCount} total={totalCount} />
+        </View>
+
+        {/* Stats row */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
+          <StatBox label="BEST STREAK" value={bestStreak} accent={brutal.accent} />
+          <StatBox label="TODAY" value={`${completedCount}/${totalCount}`} accent={brutal.indigo} />
+          <StatBox label="ACTIVE" value={totalCount} accent={brutal.success} />
+        </View>
+
+        {/* Section header */}
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: 12,
+          }}
+        >
+          <BlackTag>{`HABITS — ${completedCount}/${totalCount}`}</BlackTag>
+          <View style={{ flex: 1, height: 2, backgroundColor: brutal.ink }} />
+        </View>
+
+        {/* Habit cards */}
+        {habits.map((habit) => (
+          <BrutalHabitCard
+            key={habit.id}
+            habit={habit}
+            onToggle={() => void toggleCompletion(habit.id)}
+            onPress={() => router.push(`/habit/${habit.id}`)}
+          />
+        ))}
+
+        {/* Empty state */}
+        {habits.length === 0 && (
+          <View
+            style={{
+              borderWidth: 2,
+              borderColor: brutal.borderLight,
+              borderStyle: 'dashed',
+              padding: 32,
+              alignItems: 'center',
+              marginTop: 8,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 40,
+                marginBottom: 12,
+              }}
+            >
+              🎯
+            </Text>
+            <Text
+              style={{
+                fontSize: 16,
+                fontFamily: fontFamily.heading,
+                fontWeight: '700',
+                color: brutal.ink,
+                marginBottom: 4,
+              }}
+            >
+              NO HABITS YET
+            </Text>
+            <Text
+              style={{
+                fontSize: 13,
+                fontFamily: fontFamily.monoRegular,
+                color: brutal.inkMuted,
+                textAlign: 'center',
+              }}
+            >
+              Tap the + button to create your first habit
+            </Text>
+          </View>
+        )}
+      </Animated.ScrollView>
 
       {/* FAB */}
-      <TouchableOpacity
+      <Pressable
         onPress={() => router.push('/habit/new')}
-        className="absolute bottom-24 right-5 h-14 w-14 items-center justify-center rounded-full bg-indigo-500 shadow-lg"
-        activeOpacity={0.8}
+        style={({ pressed }) => ({
+          position: 'absolute',
+          bottom: 90,
+          right: 20,
+          width: 56,
+          height: 56,
+          backgroundColor: brutal.accent,
+          borderWidth: 3,
+          borderColor: brutal.ink,
+          alignItems: 'center',
+          justifyContent: 'center',
+          // Offset shadow via wrapper
+          shadowColor: brutal.ink,
+          shadowOffset: { width: pressed ? 1 : 4, height: pressed ? 1 : 4 },
+          shadowOpacity: 1,
+          shadowRadius: 0,
+          elevation: 0,
+          transform: [
+            { translateX: pressed ? 3 : 0 },
+            { translateY: pressed ? 3 : 0 },
+          ],
+        })}
       >
-        <Ionicons name="add" size={28} color="#FFFFFF" />
-      </TouchableOpacity>
+        <Text
+          style={{
+            fontSize: 30,
+            fontFamily: fontFamily.heading,
+            fontWeight: '700',
+            color: '#FFFFFF',
+            lineHeight: 32,
+          }}
+        >
+          +
+        </Text>
+      </Pressable>
     </SafeAreaView>
   );
 }
+
+/** Subtle dot grid background pattern */
+function DotGrid() {
+  const dots: { cx: number; cy: number }[] = [];
+  const spacing = 20;
+  for (let y = 0; y < 50; y++) {
+    for (let x = 0; x < 20; x++) {
+      dots.push({ cx: x * spacing + spacing / 2, cy: y * spacing + spacing / 2 });
+    }
+  }
+
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        opacity: 0.03,
+      }}
+      pointerEvents="none"
+    >
+      <Svg width="100%" height="100%">
+        {dots.map((d, i) => (
+          <Circle key={i} cx={d.cx} cy={d.cy} r={1} fill="#000000" />
+        ))}
+      </Svg>
+    </View>
+  );
+}
+

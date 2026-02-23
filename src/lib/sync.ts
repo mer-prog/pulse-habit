@@ -6,6 +6,7 @@ import {
   incrementSyncRetry,
   removeSyncQueueItem,
   addSyncConflict,
+  purgeExpiredSyncItems,
 } from './database';
 import { SyncError } from './errors';
 import { SYNC_BACKOFF_BASE_MS, SYNC_MAX_RETRIES } from '@/constants/config';
@@ -26,18 +27,23 @@ export async function processSyncQueue(db: SQLiteDatabase): Promise<{
   processed: number;
   failed: number;
   conflicts: number;
+  purged: number;
 }> {
   if (!isSupabaseConfigured()) {
-    return { processed: 0, failed: 0, conflicts: 0 };
+    return { processed: 0, failed: 0, conflicts: 0, purged: 0 };
   }
 
   // Verify we have a valid Supabase auth session before attempting any sync
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
-    console.log('[Sync] No valid Supabase session yet, skipping sync');
-    return { processed: 0, failed: 0, conflicts: 0 };
+    if (__DEV__) console.log('[Sync] No valid Supabase session yet, skipping sync');
+    return { processed: 0, failed: 0, conflicts: 0, purged: 0 };
   }
-  console.log('[Sync] Session verified, auth_uid:', session.user.id);
+  if (__DEV__) console.log('[Sync] Session verified, auth_uid:', session.user.id);
+
+  // Purge items that have exceeded max retries
+  const purged = await purgeExpiredSyncItems(db);
+  if (__DEV__ && purged > 0) console.log(`[Sync] Purged ${purged} expired queue items`);
 
   const queue = await getSyncQueue(db);
   let processed = 0;
@@ -55,17 +61,13 @@ export async function processSyncQueue(db: SQLiteDatabase): Promise<{
         conflicts++;
       }
     } catch (err) {
-      console.warn(`[Sync] Failed to process item ${item.id}:`, err);
+      if (__DEV__) console.warn(`[Sync] Failed to process item ${item.id}:`, err);
       await incrementSyncRetry(db, item.id);
       failed++;
-
-      if (item.retry_count + 1 >= item.max_retries) {
-        console.warn(`[Sync] Item ${item.id} reached max retries`);
-      }
     }
   }
 
-  return { processed, failed, conflicts };
+  return { processed, failed, conflicts, purged };
 }
 
 async function processQueueItem(
@@ -74,20 +76,20 @@ async function processQueueItem(
 ): Promise<'success' | 'conflict'> {
   const data = JSON.parse(item.data) as Record<string, unknown>;
 
-  // Debug: log auth state and data being synced
   const { data: { session } } = await supabase.auth.getSession();
-  console.log(`[Sync] Processing ${item.table_name} ${item.operation}`, {
-    auth_uid: session?.user?.id ?? 'NO SESSION',
-    data_user_id: data.user_id ?? 'N/A',
-    record_id: data.id ?? data.habit_id ?? 'unknown',
-    retry: item.retry_count,
-  });
+  if (__DEV__) {
+    console.log(`[Sync] Processing ${item.table_name} ${item.operation}`, {
+      auth_uid: session?.user?.id ?? 'NO SESSION',
+      data_user_id: data.user_id ?? 'N/A',
+      record_id: data.id ?? data.habit_id ?? 'unknown',
+      retry: item.retry_count,
+    });
+  }
 
-  // CRITICAL: Override local user_id with current Supabase auth uid
-  // Local SQLite may have a different user_id (from initial signup or guest mode)
-  // RLS policy requires auth.uid() = user_id, so we must align them
+  // Override local user_id with current Supabase auth uid
+  // Local SQLite may have a stale user_id from initial signup or account switch
   if (session?.user?.id && data.user_id && data.user_id !== session.user.id) {
-    console.log(`[Sync] Rewriting user_id: ${data.user_id} → ${session.user.id}`);
+    if (__DEV__) console.log(`[Sync] Rewriting user_id: ${data.user_id} → ${session.user.id}`);
     data.user_id = session.user.id;
   }
 
@@ -239,3 +241,4 @@ function generateUUID(): string {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
+
