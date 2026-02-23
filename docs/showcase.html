@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PulseHabit — Portfolio Showcase</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --cream: #FFFDF5;
+    --ink: #1A1A1A;
+    --orange: #FF5722;
+    --green: #10B981;
+    --indigo: #4F46E5;
+    --rose: #E11D48;
+    --border: 3px solid var(--ink);
+    --shadow: 4px 4px 0 var(--ink);
+    --shadow-lg: 6px 6px 0 var(--ink);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  .mono { font-family: 'Space Mono', monospace; }
+
+  /* ===== HERO ===== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--ink) 1px, transparent 1px),
+      linear-gradient(90deg, var(--ink) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.04;
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--ink);
+    color: var(--cream);
+    padding: 8px 20px;
+    border: var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    margin-bottom: 2rem;
+    animation: slideDown 0.6s ease-out;
+  }
+
+  .hero-title {
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    text-align: center;
+    margin-bottom: 1.5rem;
+    animation: slideUp 0.6s ease-out 0.1s both;
+  }
+
+  .hero-title .accent {
+    color: var(--orange);
+    position: relative;
+    display: inline-block;
+  }
+
+  .hero-title .accent::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: -4px;
+    right: -4px;
+    height: 12px;
+    background: var(--orange);
+    opacity: 0.2;
+    z-index: -1;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.4rem);
+    text-align: center;
+    max-width: 560px;
+    line-height: 1.6;
+    color: #555;
+    margin-bottom: 3rem;
+    animation: slideUp 0.6s ease-out 0.2s both;
+  }
+
+  .hero-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    animation: slideUp 0.6s ease-out 0.3s both;
+  }
+
+  .tag {
+    padding: 6px 16px;
+    border: 2px solid var(--ink);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: var(--cream);
+    box-shadow: 2px 2px 0 var(--ink);
+    transition: all 0.15s;
+  }
+
+  .tag:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--ink);
+  }
+
+  .tag.orange { background: var(--orange); color: white; }
+  .tag.green { background: var(--green); color: white; }
+  .tag.indigo { background: var(--indigo); color: white; }
+
+  /* ===== PHONE MOCKUPS ===== */
+  .phones-section {
+    padding: 4rem 2rem 6rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .section-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--orange);
+    margin-bottom: 1rem;
+  }
+
+  .section-title {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 3rem;
+  }
+
+  .phones-grid {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 1200px;
+  }
+
+  .phone-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .phone {
+    width: 260px;
+    height: 520px;
+    border: var(--border);
+    border-radius: 28px;
+    background: var(--cream);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    position: relative;
+    transition: transform 0.3s, box-shadow 0.3s;
+  }
+
+  .phone:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 9px 9px 0 var(--ink);
+  }
+
+  .phone.dark {
+    background: #0D0D0D;
+  }
+
+  .phone-notch {
+    width: 120px;
+    height: 28px;
+    background: var(--ink);
+    border-radius: 0 0 16px 16px;
+    margin: 0 auto;
+  }
+
+  .phone-screen {
+    padding: 16px;
+    height: calc(100% - 28px);
+    overflow: hidden;
+  }
+
+  .phone-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border: 2px solid var(--ink);
+    background: var(--cream);
+  }
+
+  /* Mock screen contents */
+  .mock-header {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+  }
+
+  .mock-date {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: #999;
+    margin-bottom: 14px;
+  }
+
+  .mock-card {
+    border: 2px solid var(--ink);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    background: var(--cream);
+    position: relative;
+    box-shadow: 3px 3px 0 var(--ink);
+  }
+
+  .dark .mock-card {
+    background: #1A1A1A;
+    border-color: #444;
+    box-shadow: 3px 3px 0 #444;
+    color: #E8E4DC;
+  }
+
+  .mock-card-title {
+    font-weight: 700;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .mock-card-sub {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  .mock-streak {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 3px solid var(--orange);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--orange);
+  }
+
+  .mock-check {
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--ink);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    flex-shrink: 0;
+  }
+
+  .mock-check.done {
+    background: var(--green);
+    border-color: var(--green);
+    color: white;
+  }
+
+  .mock-progress {
+    height: 8px;
+    background: #e0e0e0;
+    border: 1.5px solid var(--ink);
+    margin-top: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mock-progress-fill {
+    height: 100%;
+    background: var(--orange);
+  }
+
+  .mock-fab {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 48px;
+    height: 48px;
+    background: var(--orange);
+    border: 2px solid var(--ink);
+    box-shadow: 3px 3px 0 var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .mock-stat-box {
+    border: 2px solid var(--ink);
+    padding: 8px;
+    text-align: center;
+    box-shadow: 2px 2px 0 var(--ink);
+    flex: 1;
+  }
+
+  .dark .mock-stat-box {
+    border-color: #444;
+    box-shadow: 2px 2px 0 #444;
+  }
+
+  .mock-stat-num {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--orange);
+  }
+
+  .mock-stat-label {
+    font-size: 0.55rem;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  .mock-tab-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    border-top: 2px solid var(--ink);
+    background: var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+  }
+
+  .dark .mock-tab-bar {
+    background: #0D0D0D;
+    border-color: #333;
+  }
+
+  .mock-tab {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.5rem;
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 0;
+  }
+
+  .mock-tab.active {
+    background: var(--ink);
+    color: var(--cream);
+    border: 1.5px solid var(--ink);
+  }
+
+  .dark .mock-tab.active {
+    background: #1A1A1A;
+    color: #E8E4DC;
+  }
+
+  /* Calendar mock */
+  .mock-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 3px;
+    margin-top: 8px;
+  }
+
+  .mock-cal-day {
+    aspect-ratio: 1;
+    border: 1.5px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.5rem;
+  }
+
+  .mock-cal-day.filled {
+    background: var(--green);
+    border-color: var(--ink);
+    color: white;
+  }
+
+  .mock-cal-day.missed {
+    background: #fecaca;
+    border-color: var(--ink);
+  }
+
+  .dark .mock-cal-day {
+    border-color: #333;
+    color: #888;
+  }
+
+  /* Toggle */
+  .mock-theme-toggle {
+    display: flex;
+    border: 2px solid var(--ink);
+    margin-top: 12px;
+  }
+
+  .mock-toggle-btn {
+    flex: 1;
+    text-align: center;
+    padding: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 700;
+  }
+
+  .mock-toggle-btn.active {
+    background: var(--ink);
+    color: var(--cream);
+  }
+
+  .dark .mock-toggle-btn.active {
+    background: #1A1A1A;
+    color: #E8E4DC;
+  }
+
+  /* ===== FEATURES ===== */
+  .features-section {
+    padding: 6rem 2rem;
+    background: var(--ink);
+    color: var(--cream);
+    position: relative;
+  }
+
+  .features-section::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 20px,
+        rgba(255,255,255,0.02) 20px,
+        rgba(255,255,255,0.02) 21px
+      );
+    pointer-events: none;
+  }
+
+  .features-grid {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .feature-card {
+    border: 2px solid rgba(255,255,255,0.2);
+    padding: 2rem;
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .feature-card:hover {
+    border-color: var(--orange);
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--orange);
+  }
+
+  .feature-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .feature-desc {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.7);
+  }
+
+  /* ===== ARCHITECTURE ===== */
+  .arch-section {
+    padding: 6rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .arch-diagram {
+    max-width: 700px;
+    width: 100%;
+    margin-top: 2rem;
+  }
+
+  .arch-layer {
+    border: var(--border);
+    padding: 1.2rem 1.5rem;
+    margin-bottom: -3px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s;
+    position: relative;
+    background: var(--cream);
+  }
+
+  .arch-layer:hover {
+    transform: translateX(-4px);
+    box-shadow: 4px 0 0 var(--orange);
+    z-index: 1;
+  }
+
+  .arch-layer-name {
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .arch-layer-tech {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    color: #777;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .arch-layer-tech span {
+    background: rgba(0,0,0,0.06);
+    padding: 2px 8px;
+    border: 1px solid rgba(0,0,0,0.1);
+  }
+
+  .arch-arrow {
+    text-align: center;
+    padding: 6px 0;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--orange);
+    letter-spacing: 0.2em;
+  }
+
+  /* ===== TECH STACK ===== */
+  .stack-section {
+    padding: 6rem 2rem;
+    background: #f7f5ee;
+  }
+
+  .stack-grid {
+    max-width: 800px;
+    margin: 2rem auto 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0;
+  }
+
+  .stack-item {
+    border: var(--border);
+    padding: 1.5rem;
+    margin: -1.5px;
+    background: var(--cream);
+    transition: all 0.2s;
+  }
+
+  .stack-item:hover {
+    background: var(--ink);
+    color: var(--cream);
+    z-index: 1;
+  }
+
+  .stack-item:hover .stack-item-role {
+    color: var(--orange);
+  }
+
+  .stack-item-role {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3rem;
+  }
+
+  .stack-item-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  /* ===== SYNC PIPELINE ===== */
+  .pipeline-section {
+    padding: 6rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .pipeline {
+    max-width: 600px;
+    width: 100%;
+    margin-top: 2rem;
+  }
+
+  .pipeline-step {
+    display: flex;
+    gap: 1.2rem;
+    align-items: flex-start;
+    margin-bottom: 0;
+    position: relative;
+  }
+
+  .pipeline-num {
+    width: 40px;
+    height: 40px;
+    border: var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+    background: var(--cream);
+    z-index: 1;
+  }
+
+  .pipeline-step:hover .pipeline-num {
+    background: var(--orange);
+    color: white;
+  }
+
+  .pipeline-content {
+    padding-bottom: 2rem;
+    border-left: 2px dashed #ccc;
+    padding-left: 1.2rem;
+    margin-left: -1.2rem;
+    flex: 1;
+  }
+
+  .pipeline-step:last-child .pipeline-content {
+    border-left: none;
+  }
+
+  .pipeline-title {
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+
+  .pipeline-desc {
+    font-size: 0.85rem;
+    color: #666;
+    line-height: 1.5;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    padding: 4rem 2rem;
+    text-align: center;
+    border-top: var(--border);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+  }
+
+  .footer-link {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--ink);
+    text-decoration: none;
+    border: 2px solid var(--ink);
+    padding: 8px 20px;
+    box-shadow: 3px 3px 0 var(--ink);
+    transition: all 0.15s;
+    background: var(--cream);
+  }
+
+  .footer-link:hover {
+    background: var(--orange);
+    color: white;
+    transform: translate(-2px, -2px);
+    box-shadow: 5px 5px 0 var(--ink);
+  }
+
+  /* ===== STORE MOCK ===== */
+  .store-section {
+    padding: 6rem 2rem;
+    background: var(--ink);
+    color: var(--cream);
+  }
+
+  .store-card {
+    max-width: 700px;
+    margin: 2rem auto 0;
+    border: 2px solid rgba(255,255,255,0.2);
+    padding: 2rem;
+  }
+
+  .store-header {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    margin-bottom: 2rem;
+  }
+
+  .store-icon {
+    width: 80px;
+    height: 80px;
+    background: var(--orange);
+    border: 3px solid rgba(255,255,255,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .store-icon::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: var(--ink);
+    top: 4px;
+    left: 4px;
+    z-index: -1;
+  }
+
+  .store-icon-letter {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 2.5rem;
+    color: white;
+  }
+
+  .store-app-name {
+    font-weight: 700;
+    font-size: 1.5rem;
+  }
+
+  .store-app-dev {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--green);
+    margin-top: 0.3rem;
+  }
+
+  .store-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+  }
+
+  .store-stars {
+    color: #FFC107;
+    letter-spacing: 2px;
+  }
+
+  .store-install-btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: var(--green);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    text-align: center;
+    cursor: default;
+    box-shadow: 4px 4px 0 rgba(255,255,255,0.1);
+    margin-bottom: 2rem;
+  }
+
+  .store-desc {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    color: rgba(255,255,255,0.8);
+  }
+
+  .store-desc strong {
+    color: var(--cream);
+  }
+
+  .store-features-list {
+    margin-top: 1rem;
+    list-style: none;
+  }
+
+  .store-features-list li {
+    padding: 4px 0;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.7);
+  }
+
+  .store-features-list li::before {
+    content: '▸ ';
+    color: var(--orange);
+    font-weight: 700;
+  }
+
+  .store-meta {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    flex-wrap: wrap;
+  }
+
+  .store-meta-item {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+  }
+
+  .store-meta-label {
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 0.2rem;
+  }
+
+  .store-meta-value {
+    color: var(--cream);
+    font-weight: 700;
+  }
+
+  .portfolio-badge {
+    text-align: center;
+    margin-top: 2rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.3);
+    letter-spacing: 0.1em;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    .phones-grid { gap: 2rem; }
+    .phone { width: 220px; height: 440px; }
+    .store-header { flex-direction: column; text-align: center; }
+    .store-meta { justify-content: center; }
+    .arch-layer { flex-direction: column; gap: 0.5rem; }
+    .arch-layer-tech { justify-content: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">
+    <span>◼</span>
+    <span class="mono">PORTFOLIO PROJECT</span>
+    <span>◼</span>
+  </div>
+  <h1 class="hero-title">
+    <span class="accent">Pulse</span>Habit
+  </h1>
+  <p class="hero-subtitle">
+    Neo-Brutalistデザインの習慣トラッカー。<br>
+    オフラインファースト × クラウド同期 × ダークモード。<br>
+    React Native + Supabase でフルスタック実装。
+  </p>
+  <div class="hero-tags">
+    <span class="tag orange">React Native</span>
+    <span class="tag">Expo SDK 54</span>
+    <span class="tag green">Supabase</span>
+    <span class="tag">TypeScript</span>
+    <span class="tag indigo">Zustand</span>
+    <span class="tag">SQLite</span>
+    <span class="tag">Offline-First</span>
+  </div>
+</section>
+
+<!-- PHONE MOCKUPS -->
+<section class="phones-section">
+  <div class="section-label">SCREENSHOTS</div>
+  <h2 class="section-title">アプリの全画面</h2>
+  <div class="phones-grid">
+
+    <!-- Phone 1: Today (Light) -->
+    <div class="phone-wrapper">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="mock-header">Today</div>
+          <div class="mock-date">2026年2月23日 日曜日</div>
+
+          <div class="mock-card">
+            <div class="mock-card-title">
+              <span class="mock-check done">✓</span>
+              🏃 ランニング
+            </div>
+            <div class="mock-card-sub">毎日 • 06:00</div>
+            <div class="mock-streak">12</div>
+          </div>
+
+          <div class="mock-card">
+            <div class="mock-card-title">
+              <span class="mock-check done">✓</span>
+              📖 読書 30分
+            </div>
+            <div class="mock-card-sub">毎日 • 21:00</div>
+            <div class="mock-streak">8</div>
+          </div>
+
+          <div class="mock-card">
+            <div class="mock-card-title">
+              <span class="mock-check"></span>
+              💧 水を2L飲む
+            </div>
+            <div class="mock-card-sub">毎日 • 終日</div>
+            <div class="mock-streak">5</div>
+          </div>
+
+          <div class="mock-progress">
+            <div class="mock-progress-fill" style="width: 66%"></div>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.6rem;color:#999;margin-top:4px;text-align:right">2/3 COMPLETE</div>
+
+          <div class="mock-fab">+</div>
+
+          <div class="mock-tab-bar">
+            <span class="mock-tab active">TODAY</span>
+            <span class="mock-tab">HABITS</span>
+            <span class="mock-tab">STATS</span>
+            <span class="mock-tab">PROFILE</span>
+          </div>
+        </div>
+      </div>
+      <span class="phone-label">TODAY — LIGHT</span>
+    </div>
+
+    <!-- Phone 2: Today (Dark) -->
+    <div class="phone-wrapper">
+      <div class="phone dark">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="mock-header" style="color:#E8E4DC">Today</div>
+          <div class="mock-date" style="color:#666">2026年2月23日 日曜日</div>
+
+          <div class="mock-card">
+            <div class="mock-card-title">
+              <span class="mock-check done">✓</span>
+              🏃 ランニング
+            </div>
+            <div class="mock-card-sub">毎日 • 06:00</div>
+            <div class="mock-streak">12</div>
+          </div>
+
+          <div class="mock-card">
+            <div class="mock-card-title">
+              <span class="mock-check done">✓</span>
+              📖 読書 30分
+            </div>
+            <div class="mock-card-sub">毎日 • 21:00</div>
+            <div class="mock-streak">8</div>
+          </div>
+
+          <div class="mock-card">
+            <div class="mock-card-title">
+              <span class="mock-check" style="border-color:#444"></span>
+              💧 水を2L飲む
+            </div>
+            <div class="mock-card-sub">毎日 • 終日</div>
+            <div class="mock-streak">5</div>
+          </div>
+
+          <div class="mock-progress" style="background:#222;border-color:#444">
+            <div class="mock-progress-fill" style="width: 66%"></div>
+          </div>
+          <div style="font-family:'Space Mono',monospace;font-size:0.6rem;color:#666;margin-top:4px;text-align:right">2/3 COMPLETE</div>
+
+          <div class="mock-fab">+</div>
+
+          <div class="mock-tab-bar">
+            <span class="mock-tab active">TODAY</span>
+            <span class="mock-tab" style="color:#666">HABITS</span>
+            <span class="mock-tab" style="color:#666">STATS</span>
+            <span class="mock-tab" style="color:#666">PROFILE</span>
+          </div>
+        </div>
+      </div>
+      <span class="phone-label">TODAY — DARK</span>
+    </div>
+
+    <!-- Phone 3: Stats -->
+    <div class="phone-wrapper">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="mock-header">Stats</div>
+          <div class="mock-date">FEBRUARY 2026</div>
+
+          <div style="display:flex;gap:8px;margin-bottom:12px">
+            <div class="mock-stat-box">
+              <div class="mock-stat-num">12</div>
+              <div class="mock-stat-label">CURRENT</div>
+            </div>
+            <div class="mock-stat-box">
+              <div class="mock-stat-num">28</div>
+              <div class="mock-stat-label">LONGEST</div>
+            </div>
+            <div class="mock-stat-box">
+              <div class="mock-stat-num" style="color:var(--green)">87%</div>
+              <div class="mock-stat-label">RATE</div>
+            </div>
+          </div>
+
+          <div style="font-family:'Space Mono',monospace;font-size:0.6rem;color:#999;margin-bottom:6px">COMPLETION CALENDAR</div>
+          <div class="mock-cal-grid">
+            <div class="mock-cal-day" style="font-size:0.4rem;color:#aaa">M</div>
+            <div class="mock-cal-day" style="font-size:0.4rem;color:#aaa">T</div>
+            <div class="mock-cal-day" style="font-size:0.4rem;color:#aaa">W</div>
+            <div class="mock-cal-day" style="font-size:0.4rem;color:#aaa">T</div>
+            <div class="mock-cal-day" style="font-size:0.4rem;color:#aaa">F</div>
+            <div class="mock-cal-day" style="font-size:0.4rem;color:#aaa">S</div>
+            <div class="mock-cal-day" style="font-size:0.4rem;color:#aaa">S</div>
+            <div class="mock-cal-day"></div>
+            <div class="mock-cal-day"></div>
+            <div class="mock-cal-day"></div>
+            <div class="mock-cal-day"></div>
+            <div class="mock-cal-day"></div>
+            <div class="mock-cal-day filled">1</div>
+            <div class="mock-cal-day filled">2</div>
+            <div class="mock-cal-day filled">3</div>
+            <div class="mock-cal-day filled">4</div>
+            <div class="mock-cal-day filled">5</div>
+            <div class="mock-cal-day missed">6</div>
+            <div class="mock-cal-day filled">7</div>
+            <div class="mock-cal-day filled">8</div>
+            <div class="mock-cal-day filled">9</div>
+            <div class="mock-cal-day filled">10</div>
+            <div class="mock-cal-day filled">11</div>
+            <div class="mock-cal-day filled">12</div>
+            <div class="mock-cal-day filled">13</div>
+            <div class="mock-cal-day filled">14</div>
+            <div class="mock-cal-day filled">15</div>
+            <div class="mock-cal-day filled">16</div>
+            <div class="mock-cal-day filled">17</div>
+            <div class="mock-cal-day missed">18</div>
+            <div class="mock-cal-day filled">19</div>
+            <div class="mock-cal-day filled">20</div>
+            <div class="mock-cal-day filled">21</div>
+            <div class="mock-cal-day filled">22</div>
+            <div class="mock-cal-day" style="border-color:var(--orange);color:var(--orange);font-weight:700">23</div>
+          </div>
+
+          <div class="mock-tab-bar">
+            <span class="mock-tab">TODAY</span>
+            <span class="mock-tab">HABITS</span>
+            <span class="mock-tab active">STATS</span>
+            <span class="mock-tab">PROFILE</span>
+          </div>
+        </div>
+      </div>
+      <span class="phone-label">STATS</span>
+    </div>
+
+    <!-- Phone 4: Profile -->
+    <div class="phone-wrapper">
+      <div class="phone">
+        <div class="phone-notch"></div>
+        <div class="phone-screen">
+          <div class="mock-header">Profile</div>
+          <div class="mock-date">igiryo@example.com</div>
+
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <div class="mock-stat-box">
+              <div class="mock-stat-num">3</div>
+              <div class="mock-stat-label">HABITS</div>
+            </div>
+            <div class="mock-stat-box">
+              <div class="mock-stat-num" style="color:var(--green)">87%</div>
+              <div class="mock-stat-label">OVERALL</div>
+            </div>
+          </div>
+
+          <div style="font-family:'Space Mono',monospace;font-size:0.6rem;color:#999;margin-bottom:6px">THEME</div>
+          <div class="mock-theme-toggle">
+            <div class="mock-toggle-btn active">☀ LIGHT</div>
+            <div class="mock-toggle-btn">☽ DARK</div>
+            <div class="mock-toggle-btn">⚙ SYS</div>
+          </div>
+
+          <div style="margin-top:16px">
+            <div class="mock-card" style="box-shadow:2px 2px 0 var(--ink)">
+              <div class="mock-card-title">🔔 Notifications</div>
+              <div class="mock-card-sub">Daily reminders enabled</div>
+            </div>
+            <div class="mock-card" style="box-shadow:2px 2px 0 var(--ink)">
+              <div class="mock-card-title">☁️ Sync Status</div>
+              <div class="mock-card-sub" style="color:var(--green)">✓ SYNCED</div>
+            </div>
+            <div class="mock-card" style="box-shadow:2px 2px 0 var(--ink)">
+              <div class="mock-card-title">📤 Export Data</div>
+              <div class="mock-card-sub">CSV / JSON</div>
+            </div>
+          </div>
+
+          <div class="mock-tab-bar">
+            <span class="mock-tab">TODAY</span>
+            <span class="mock-tab">HABITS</span>
+            <span class="mock-tab">STATS</span>
+            <span class="mock-tab active">PROFILE</span>
+          </div>
+        </div>
+      </div>
+      <span class="phone-label">PROFILE</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section">
+  <div style="max-width:1000px;margin:0 auto">
+    <div class="section-label" style="text-align:center;color:var(--orange)">FEATURES</div>
+    <h2 class="section-title" style="text-align:center;color:var(--cream);margin-bottom:3rem">主な機能</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">オフラインファースト</div>
+        <div class="feature-desc">SQLiteにローカル保存 → キュー経由でSupabaseに同期。ネット不要で完全動作。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">☁️</div>
+        <div class="feature-title">クラウド同期</div>
+        <div class="feature-desc">Supabase + Row Level Securityでユーザーごとにデータ分離。リトライロジック付き。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌗</div>
+        <div class="feature-title">ダークモード</div>
+        <div class="feature-desc">Light / Dark / System。Zustand + useColorSchemeでシームレス切り替え。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔥</div>
+        <div class="feature-title">ストリーク追跡</div>
+        <div class="feature-desc">現在のストリーク、最長記録、達成率をリアルタイム計算。SVGリング表示。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎨</div>
+        <div class="feature-title">Neo-Brutalist UI</div>
+        <div class="feature-desc">10個のカスタムコンポーネント。太ボーダー、オフセットシャドウ、モノスペースフォント。</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Supabase Auth</div>
+        <div class="feature-desc">メール認証。セッション管理、自動リフレッシュ、RLSによるデータ保護。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="arch-section">
+  <div class="section-label">ARCHITECTURE</div>
+  <h2 class="section-title">システム構成</h2>
+  <div class="arch-diagram">
+    <div class="arch-layer">
+      <span class="arch-layer-name">🖥 UI Layer</span>
+      <div class="arch-layer-tech">
+        <span>React Native</span>
+        <span>Expo Router</span>
+        <span>Brutal Components</span>
+      </div>
+    </div>
+    <div class="arch-arrow">▼ useTheme() · useHabits() ▼</div>
+    <div class="arch-layer">
+      <span class="arch-layer-name">📦 State</span>
+      <div class="arch-layer-tech">
+        <span>Zustand</span>
+        <span>authStore</span>
+        <span>habitStore</span>
+        <span>settingsStore</span>
+      </div>
+    </div>
+    <div class="arch-arrow">▼ mutations ▼</div>
+    <div class="arch-layer" style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+      <div style="border-right:2px solid var(--ink);padding-right:1rem">
+        <span class="arch-layer-name">💾 Local DB</span>
+        <div class="arch-layer-tech" style="justify-content:flex-start;margin-top:4px">
+          <span>expo-sqlite</span>
+        </div>
+      </div>
+      <div style="padding-left:1rem">
+        <span class="arch-layer-name">🔄 Sync Queue</span>
+        <div class="arch-layer-tech" style="justify-content:flex-start;margin-top:4px">
+          <span>retry + purge</span>
+        </div>
+      </div>
+    </div>
+    <div class="arch-arrow">▼ RLS-protected ▼</div>
+    <div class="arch-layer" style="background:var(--ink);color:var(--cream);border-color:var(--orange)">
+      <span class="arch-layer-name">☁️ Supabase</span>
+      <div class="arch-layer-tech" style="color:rgba(255,255,255,0.6)">
+        <span style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2)">Auth</span>
+        <span style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2)">PostgreSQL</span>
+        <span style="background:rgba(255,255,255,0.1);border-color:rgba(255,255,255,0.2)">RLS</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SYNC PIPELINE -->
+<section class="pipeline-section" style="background:#f7f5ee">
+  <div class="section-label">SYNC PIPELINE</div>
+  <h2 class="section-title">オフライン同期の仕組み</h2>
+  <div class="pipeline">
+    <div class="pipeline-step">
+      <div class="pipeline-num">01</div>
+      <div class="pipeline-content">
+        <div class="pipeline-title">ローカル書き込み</div>
+        <div class="pipeline-desc">全ての変更はまずSQLiteに書き込み。UIは即座にレスポンス。</div>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="pipeline-num">02</div>
+      <div class="pipeline-content">
+        <div class="pipeline-title">キューイング</div>
+        <div class="pipeline-desc">変更をsync_queueテーブルにエンキュー。テーブル名・操作・データを記録。</div>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="pipeline-num">03</div>
+      <div class="pipeline-content">
+        <div class="pipeline-title">セッション検証</div>
+        <div class="pipeline-desc">Supabaseセッションの有効性を確認。user_idの不一致を自動修正（ローカルID → auth UID）。</div>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="pipeline-num">04</div>
+      <div class="pipeline-content">
+        <div class="pipeline-title">RLS通過</div>
+        <div class="pipeline-desc">Row Level Securityが各行のuser_idとauth.uid()を照合。一致しないデータは拒否。</div>
+      </div>
+    </div>
+    <div class="pipeline-step">
+      <div class="pipeline-num">05</div>
+      <div class="pipeline-content">
+        <div class="pipeline-title">リトライ & パージ</div>
+        <div class="pipeline-desc">失敗したアイテムはリトライカウンタで再試行。一定回数超過で自動パージ。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TECH STACK -->
+<section class="stack-section">
+  <div style="text-align:center">
+    <div class="section-label">TECH STACK</div>
+    <h2 class="section-title">技術スタック</h2>
+  </div>
+  <div class="stack-grid">
+    <div class="stack-item">
+      <div class="stack-item-role">Framework</div>
+      <div class="stack-item-name">React Native</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-item-role">Platform</div>
+      <div class="stack-item-name">Expo SDK 54</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-item-role">Navigation</div>
+      <div class="stack-item-name">Expo Router v6</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-item-role">Language</div>
+      <div class="stack-item-name">TypeScript</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-item-role">State</div>
+      <div class="stack-item-name">Zustand</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-item-role">Local DB</div>
+      <div class="stack-item-name">expo-sqlite</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-item-role">Backend</div>
+      <div class="stack-item-name">Supabase</div>
+    </div>
+    <div class="stack-item">
+      <div class="stack-item-role">Design</div>
+      <div class="stack-item-name">Neo-Brutalist</div>
+    </div>
+  </div>
+</section>
+
+<!-- STORE MOCK -->
+<section class="store-section">
+  <div style="text-align:center">
+    <div class="section-label" style="color:var(--orange)">STORE LISTING (MOCK)</div>
+    <h2 class="section-title" style="color:var(--cream)">擬似ストアページ</h2>
+  </div>
+  <div class="store-card">
+    <div class="store-header">
+      <div class="store-icon">
+        <span class="store-icon-letter">P</span>
+      </div>
+      <div>
+        <div class="store-app-name">PulseHabit — 習慣トラッカー</div>
+        <div class="store-app-dev">mer-prog</div>
+        <div class="store-rating">
+          <span class="store-stars">★★★★★</span>
+          <span>4.8 (mock)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="store-install-btn">インストール</div>
+
+    <div class="store-desc">
+      毎日の習慣を、一つずつ積み上げよう。<br><br>
+      <strong>PulseHabit</strong>は、Neo-Brutalistデザインの習慣トラッカー。オフラインファーストで動作し、Supabaseでクラウド同期。
+    </div>
+
+    <ul class="store-features-list">
+      <li>カスタムアイコン・カラーで無制限に習慣を作成</li>
+      <li>ワンタップで毎日の達成を記録</li>
+      <li>ストリーク表示でモチベーション維持</li>
+      <li>週間・月間の美しい統計グラフ</li>
+      <li>ダークモード対応（ライト / ダーク / システム）</li>
+      <li>クラウド同期でデバイス間データ共有</li>
+      <li>オフラインファースト — ネット不要で動作</li>
+    </ul>
+
+    <div class="store-meta">
+      <div class="store-meta-item">
+        <div class="store-meta-label">VERSION</div>
+        <div class="store-meta-value">1.0.0</div>
+      </div>
+      <div class="store-meta-item">
+        <div class="store-meta-label">SIZE</div>
+        <div class="store-meta-value">~25 MB</div>
+      </div>
+      <div class="store-meta-item">
+        <div class="store-meta-label">CATEGORY</div>
+        <div class="store-meta-value">Health & Fitness</div>
+      </div>
+      <div class="store-meta-item">
+        <div class="store-meta-label">PLATFORM</div>
+        <div class="store-meta-value">iOS / Android</div>
+      </div>
+    </div>
+  </div>
+  <div class="portfolio-badge">※ ポートフォリオ用モックアップ — 実際のストアには未公開</div>
+</section>
+
+<!-- FOOTER -->
+<section class="footer">
+  <h2 style="font-size:1.5rem;font-weight:700">PulseHabit</h2>
+  <p style="color:#777;margin-top:0.5rem;font-size:0.9rem">Built by mer-prog — 2026</p>
+  <div class="footer-links">
+    <a href="https://github.com/mer-prog/pulse-habit" class="footer-link" target="_blank">GitHub →</a>
+  </div>
+</section>
+
+</body>
+</html>
