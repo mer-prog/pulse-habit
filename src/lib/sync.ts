@@ -39,7 +39,7 @@ export async function processSyncQueue(db: SQLiteDatabase): Promise<{
     if (__DEV__) console.log('[Sync] No valid Supabase session yet, skipping sync');
     return { processed: 0, failed: 0, conflicts: 0, purged: 0 };
   }
-  if (__DEV__) console.log('[Sync] Session verified, auth_uid:', session.user.id);
+  if (__DEV__) console.log('[Sync] Session verified, auth_uid:', session.user.id.slice(0, 8) + '...');
 
   // Purge items that have exceeded max retries
   const purged = await purgeExpiredSyncItems(db);
@@ -78,10 +78,10 @@ async function processQueueItem(
 
   const { data: { session } } = await supabase.auth.getSession();
   if (__DEV__) {
+    const truncateId = (id: unknown) => typeof id === 'string' && id.length > 8 ? id.slice(0, 8) + '...' : id;
     console.log(`[Sync] Processing ${item.table_name} ${item.operation}`, {
-      auth_uid: session?.user?.id ?? 'NO SESSION',
-      data_user_id: data.user_id ?? 'N/A',
-      record_id: data.id ?? data.habit_id ?? 'unknown',
+      auth_uid: truncateId(session?.user?.id) ?? 'NO SESSION',
+      record_id: truncateId(data.id ?? data.habit_id) ?? 'unknown',
       retry: item.retry_count,
     });
   }
@@ -89,7 +89,7 @@ async function processQueueItem(
   // Override local user_id with current Supabase auth uid
   // Local SQLite may have a stale user_id from initial signup or account switch
   if (session?.user?.id && data.user_id && data.user_id !== session.user.id) {
-    if (__DEV__) console.log(`[Sync] Rewriting user_id: ${data.user_id} → ${session.user.id}`);
+    if (__DEV__) console.log('[Sync] Rewriting user_id to match current session');
     data.user_id = session.user.id;
   }
 
@@ -234,8 +234,13 @@ export function getBackoffDelay(retryCount: number): number {
 
 function generateUUID(): string {
   const bytes = new Uint8Array(16);
-  for (let i = 0; i < 16; i++) {
-    bytes[i] = Math.floor(Math.random() * 256);
+  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    // Fallback for environments without Web Crypto API
+    for (let i = 0; i < 16; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
   }
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))

@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useToastStore } from '@/stores/toastStore';
 import { brutal, fontFamily, useTheme } from '@/constants/theme';
+import { MIN_PASSWORD_LENGTH, MAX_EMAIL_LENGTH } from '@/constants/config';
 
 export default function SignInScreen() {
   const router = useRouter();
@@ -24,9 +25,10 @@ export default function SignInScreen() {
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
     if (!email.trim()) newErrors.email = 'Email is required';
+    else if (email.length > MAX_EMAIL_LENGTH) newErrors.email = 'Email is too long';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Invalid email';
     if (!password.trim()) newErrors.password = 'Password is required';
-    else if (password.length < 6) newErrors.password = 'Min 6 characters';
+    else if (password.length < MIN_PASSWORD_LENGTH) newErrors.password = `Min ${MIN_PASSWORD_LENGTH} characters`;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
