@@ -10,6 +10,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { useToastStore } from '@/stores/toastStore';
 import { brutal, fontFamily, useTheme } from '@/constants/theme';
+import { MIN_PASSWORD_LENGTH, MAX_NAME_LENGTH, MAX_EMAIL_LENGTH } from '@/constants/config';
 
 export default function SignUpScreen() {
   const router = useRouter();
@@ -26,10 +27,14 @@ export default function SignUpScreen() {
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Name is required';
+    else if (name.trim().length > MAX_NAME_LENGTH) newErrors.name = `Max ${MAX_NAME_LENGTH} characters`;
     if (!email.trim()) newErrors.email = 'Email is required';
+    else if (email.length > MAX_EMAIL_LENGTH) newErrors.email = 'Email is too long';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Invalid email';
     if (!password.trim()) newErrors.password = 'Password is required';
-    else if (password.length < 6) newErrors.password = 'Min 6 characters';
+    else if (password.length < MIN_PASSWORD_LENGTH) newErrors.password = `Min ${MIN_PASSWORD_LENGTH} characters`;
+    else if (!/[A-Z]/.test(password)) newErrors.password = 'Must include an uppercase letter';
+    else if (!/[0-9]/.test(password)) newErrors.password = 'Must include a number';
     if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;

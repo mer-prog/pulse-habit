@@ -8,7 +8,7 @@ import { useHabits } from '@/hooks/useHabits';
 import { useNotifications } from '@/hooks/useNotifications';
 import { hapticSuccess } from '@/lib/haptics';
 import { CATEGORIES } from '@/constants/categories';
-import { HABIT_ICONS, HABIT_COLORS, WEEKDAYS, DEFAULT_REMINDER_TIME } from '@/constants/config';
+import { HABIT_ICONS, HABIT_COLORS, WEEKDAYS, DEFAULT_REMINDER_TIME, MAX_HABIT_NAME_LENGTH, MAX_HABIT_DESCRIPTION_LENGTH } from '@/constants/config';
 import type { HabitCategory, HabitFrequency } from '@/types';
 
 export default function NewHabitScreen() {
@@ -35,9 +35,12 @@ export default function NewHabitScreen() {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateStep1 = (): boolean => {
-    if (!name.trim()) { setErrors({ name: 'Name is required' }); return false; }
-    setErrors({});
-    return true;
+    const newErrors: Record<string, string> = {};
+    if (!name.trim()) { newErrors.name = 'Name is required'; }
+    else if (name.trim().length > MAX_HABIT_NAME_LENGTH) { newErrors.name = `Max ${MAX_HABIT_NAME_LENGTH} characters`; }
+    if (description.trim().length > MAX_HABIT_DESCRIPTION_LENGTH) { newErrors.description = `Max ${MAX_HABIT_DESCRIPTION_LENGTH} characters`; }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleNext = () => {

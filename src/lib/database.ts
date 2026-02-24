@@ -91,7 +91,13 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     `);
   }
 
-  await db.execAsync(`PRAGMA user_version = ${DB_VERSION}`);
+  // DB_VERSION is a compile-time numeric constant from config — safe to interpolate.
+  // SQLite PRAGMA does not support parameterized values.
+  const version = Number(DB_VERSION);
+  if (!Number.isInteger(version) || version < 0) {
+    throw new DatabaseError(`Invalid DB_VERSION: ${DB_VERSION}`);
+  }
+  await db.execAsync(`PRAGMA user_version = ${version}`);
 }
 
 // ─── Sync Queue Helper ─────────────────────────────────
@@ -578,8 +584,13 @@ export async function resolveConflict(
 
 function generateId(): string {
   const bytes = new Uint8Array(16);
-  for (let i = 0; i < 16; i++) {
-    bytes[i] = Math.floor(Math.random() * 256);
+  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    // Fallback for environments without Web Crypto API
+    for (let i = 0; i < 16; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
   }
   return Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, '0'))

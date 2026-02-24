@@ -8,6 +8,14 @@ export const SYNC_BACKOFF_BASE_MS = 1000;
 
 export const DEFAULT_REMINDER_TIME = '09:00';
 
+// Input validation limits
+export const MAX_HABIT_NAME_LENGTH = 100;
+export const MAX_HABIT_DESCRIPTION_LENGTH = 500;
+export const MAX_COMPLETION_NOTE_LENGTH = 500;
+export const MIN_PASSWORD_LENGTH = 8;
+export const MAX_NAME_LENGTH = 100;
+export const MAX_EMAIL_LENGTH = 254;
+
 export const HABIT_ICONS = [
   '🎯', '🏃', '📚', '🧘', '💧', '💻', '🎨', '🎵',
   '✍️', '🌱', '💪', '🧠', '🍎', '😴', '🧹', '📝',
