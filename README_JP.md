@@ -1,55 +1,128 @@
-# 🟠 PulseHabit — オフラインでも使える習慣トラッカー
+<p align="center">
+  <img src="assets/icon.png" alt="PulseHabit" width="80" height="80" />
+</p>
 
-## サマリー
+<h1 align="center">PulseHabit</h1>
+<p align="center"><strong>オフラインファーストの習慣トラッカー — ネットが切れてもデータ消失ゼロ。</strong></p>
 
-- **何を作ったか**: ネットが切れても普通に使えて、繋がった瞬間にクラウドと自動同期する習慣トラッカー。データ消失ゼロ。
-- **誰のためか**: モバイルアプリを作りたいスタートアップ、ヘルステック企業、オフラインファースト設計のReact Native実装例を探しているエンジニア。
-- **技術**: React Native · Expo SDK 54 · TypeScript · Zustand · SQLite · Supabase · Row Level Security
+<p align="center">
+  <img src="https://img.shields.io/badge/React_Native-0.81-61DAFB?style=flat-square&logo=react" alt="React Native" />
+  <img src="https://img.shields.io/badge/Expo_SDK-54-000020?style=flat-square&logo=expo" alt="Expo" />
+  <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Supabase-RLS-3ECF8E?style=flat-square&logo=supabase" alt="Supabase" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License" />
+  <img src="https://img.shields.io/badge/運用コスト-¥0%2F月-brightgreen?style=flat-square" alt="Cost" />
+</p>
+
+<p align="center">
+  <a href="https://mer-prog.github.io/pulse-habit/docs/showcase.html"><strong>ショーケース</strong></a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#architecture">アーキテクチャ</a> ·
+  <a href="#security">セキュリティ</a> ·
+  <a href="./README.md">English</a>
+</p>
 
 ---
 
-## リンク
+## なぜこのプロジェクトを作ったか
 
-| | |
-|---|---|
-| **📱 ショーケース** | [mer-prog.github.io/pulse-habit/docs/showcase.html](https://mer-prog.github.io/pulse-habit/docs/showcase.html) |
-| **💻 ソースコード** | [github.com/mer-prog/pulse-habit](https://github.com/mer-prog/pulse-habit) |
-| **🏗️ 運用コスト** | **月額 ¥0** — Supabase無料枠（5万リクエスト/月、500MBストレージ） |
+多くの習慣アプリは現実世界で壊れる — 地下鉄、機内モード、不安定なWi-Fi。PulseHabitはこの問題を解決するために作った。全ての変更はまずSQLiteに書き込み、Supabaseへは非同期で同期するため、UIは通信状態に関係なく10ms以下で応答する。
 
-> **注意**: ポートフォリオ用プロジェクトです。ショーケースページにはモックスクリーンショットと擬似ストアページを含みます。
+チュートリアルの延長ではない。オフラインモードで生成されたローカルSQLiteのuser_idが、サインアップ後にSupabaseの`auth.uid()`と乖離し、Row Level Securityポリシーが全INSERTを拒否するという**本番レベルの同期バグ**を発見し、解決している。
+
+**対象**: モバイルアプリを作りたいスタートアップ、ヘルステック企業、オフラインファースト設計のReact Native実装例を探しているエンジニア。
 
 ---
 
-## このプロジェクトで証明できるスキル
+## デモ
+
+> **[ショーケースページ](https://mer-prog.github.io/pulse-habit/docs/showcase.html)** — インタラクティブなモックアップ、機能ウォークスルー、擬似ストアページ。
+
+```
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│   TODAY.     │  │   HABITS.   │  │   STATS.    │  │   PROFILE   │
+│             │  │             │  │             │  │             │
+│  ◉ 3/5     │  │ 01 🏃 ジョグ │  │  ▓▓▓▓░ 78% │  │  ○ user     │
+│  ████░░░░░ │  │ 02 📚 読書  │  │             │  │  Theme: ◐   │
+│             │  │ 03 🧘 瞑想  │  │  Streak: 45 │  │  Sync: ✓    │
+│  🏃 ジョグ ✓ │  │ 04 💧 水2L  │  │  Best: 45d  │  │             │
+│  📚 読書  ✓ │  │ 05 💻 コード │  │  Total: 847 │  │  Sign Out → │
+│  🧘 瞑想  ✓ │  │             │  │             │  │             │
+│  💧 水2L  · │  │  🔥23  🔥15 │  │  ▪▪▫▪▪▪▫   │  │             │
+│  💻 コード · │  │             │  │  Feb 2026   │  │             │
+└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘
+```
+
+---
+
+<a id="quick-start"></a>
+
+## Quick Start
+
+```bash
+# 1. クローン
+git clone https://github.com/mer-prog/pulse-habit.git
+cd pulse-habit
+
+# 2. 依存関係インストール
+npm install
+
+# 3. 環境変数の設定（任意 — Supabaseなしでもオフラインで完全動作）
+cp .env.example .env
+# .env にSupabaseプロジェクトURLとanon keyを記入
+
+# 4. 起動
+npx expo start
+```
+
+> **Supabaseアカウントがなくても大丈夫。** アプリはローカルSQLiteで完全に動作します。Supabaseの認証情報を追加すると、クラウド同期が自動で有効になります。
+
+### 利用可能なスクリプト
+
+| コマンド | 説明 |
+|---------|------|
+| `npm start` | Expo開発サーバーを起動 |
+| `npm run ios` | iOSシミュレータで実行 |
+| `npm run android` | Androidエミュレータで実行 |
+| `npm run web` | Web版を起動 |
+| `npm test` | Jestテストスイートを実行 |
+| `npm run lint` | ESLintを実行 |
+| `npm run typecheck` | TypeScript strictモード型チェック |
+
+---
+
+## 証明できるスキル
 
 | スキル | 実装内容 |
 |--------|---------|
-| **オフラインファースト設計** | ネットなしで完全動作するアプリを構築。全ての変更をまずローカルSQLiteに書き込み、キュー経由でSupabaseに非同期同期。指数バックオフ＋自動パージで接続不良時もデータ消失ゼロ。 |
-| **認証 + Row Level Security** | APIキーが漏洩しても他人のデータにアクセスできない設計。Supabase Authでセッション管理し、PostgreSQL RLSポリシーでサーバーサイドからデータ分離を強制。 |
-| **カスタムデザインシステム** | UIライブラリ不使用で10コンポーネントのNeo-Brutalistデザインシステムをゼロから構築。太ボーダー、オフセットシャドウ、モノスペースフォント。ダークモード完全対応。 |
-| **同期コンフリクト解決** | ローカルSQLiteのuser_idとSupabase auth UIDが乖離する実運用バグを発見・解決。同期パイプライン内でuser_idを書き換え、RLSポリシーを通過させる仕組みを実装。 |
-| **ファイルベースルーティング + 状態管理** | Expo Router v6で型安全なナビゲーション、Zustandでボイラープレート最小の状態管理。設定はpersistミドルウェアでAsyncStorageに永続化。 |
+| **オフラインファースト設計** | 全ての変更をまずローカルSQLiteに書き込み（<10ms）、キュー経由でSupabaseに非同期同期。指数バックオフ＋自動パージで接続状態に関係なくデータ消失ゼロ。 |
+| **認証 + Row Level Security** | APIキーが漏洩しても他人のデータにアクセスできない。PostgreSQLレベルでデータ分離を強制。クライアント側の制御ではなくサーバーサイドで保証。 |
+| **カスタムデザインシステム** | UIライブラリ不使用で10コンポーネントのNeo-Brutalistシステムをゼロから構築。太ボーダー、オフセットシャドウ、モノスペースフォント。ダークモード完全対応。 |
+| **同期コンフリクト解決** | ローカルSQLiteのuser_idとSupabase auth UIDが乖離する本番バグを発見・解決。同期パイプライン内でuser_idを書き換え、RLSを通過させる仕組みを実装。 |
+| **セキュリティ強化** | 暗号学的ID生成、入力バリデーション、デバッグログのサニタイズ、PRAGMAインジェクション防止。全監査結果を下記に記載。 |
 
 ---
+
+<a id="architecture"></a>
 
 ## アーキテクチャ
 
 ```
-┌──────────────────────────────────────┐
-│         React Native UI              │
-│   Neo-Brutalist デザインシステム (10)  │
-│   Expo Router v6 · useTheme()        │
-├──────────────────────────────────────┤
-│         Zustand 状態管理層            │
-│  authStore · habitStore · settings   │
-├─────────────────┬────────────────────┤
-│  SQLite (ローカル) │  Sync Queue      │
-│  全ての変更は     │  retry + purge   │
-│  ここに先に書く   │  backoff: 1s×2^n │
-├─────────────────┴────────────────────┤
-│          Supabase (クラウド)          │
-│   Auth · PostgreSQL · RLS Policies   │
-└──────────────────────────────────────┘
+┌─────────────────────────────────────────┐
+│           React Native UI               │
+│    Neo-Brutalist デザインシステム (10)    │
+│    Expo Router v6 · useTheme()          │
+├─────────────────────────────────────────┤
+│          Zustand 状態管理層              │
+│   authStore · habitStore · settings     │
+├───────────────────┬─────────────────────┤
+│  SQLite (ローカル)  │   Sync Queue       │
+│  全ての変更は      │   retry + purge    │
+│  ここに先に書く    │   backoff: 1s×2^n  │
+├───────────────────┴─────────────────────┤
+│           Supabase (クラウド)            │
+│    Auth · PostgreSQL · RLS Policies     │
+└─────────────────────────────────────────┘
 ```
 
 **データフロー**: UI → Zustand → SQLite（即座） → Sync Queue → Supabase（非同期）。ユーザーはネットワークを待たない。
@@ -60,9 +133,7 @@
 
 ### 1. オフラインファースト同期パイプライン
 
-**成果**: ユーザーはオフラインでも習慣の作成、完了記録、統計閲覧がすべて可能。接続が戻れば自動で同期。
-
-**仕組み**:
+ユーザーはオフラインでも習慣の作成、完了記録、統計閲覧がすべて可能。接続が戻れば自動で同期。
 
 ```
 ユーザーが「完了」をタップ
@@ -70,13 +141,13 @@
   → sync_queueテーブルにエンキュー
   → SyncManagerが認証セッションを検出
   → キューアイテムを順次処理
-  → Supabase INSERTをRLS検証付きで実行
+  → Supabase UPSERTをRLS検証付きで実行
   → 成功: デキュー
   → 失敗: リトライカウント++、バックオフ 1s × 2^n
   → 5回失敗: 古いアイテムを自動パージ
 ```
 
-**技術詳細**: 同期パイプラインは各バッチ処理前に `session.user.id` を検証し、ペイロード内の `user_id` フィールドを認証済みUIDで上書きする。これはゲストモード中にSQLiteがローカル生成UUIDを保存し、サインアップ後に `auth.uid()` と乖離するため必要な処理。この書き換えがないとRLSポリシーがINSERTを拒否する。
+**難所**: SQLiteはオフラインモード中にローカル生成のUUIDを保存する。サインアップ後、これが`auth.uid()`と乖離する。書き換えなしだとRLSポリシーが全INSERTを拒否する。同期パイプラインでこれを解決:
 
 ```typescript
 // sync.ts — Supabase INSERT前のuser_id書き換え
@@ -85,33 +156,25 @@ if (data.user_id && data.user_id !== session.user.id) {
 }
 ```
 
----
-
 ### 2. Row Level Security（RLS）
 
-**成果**: APIキーが漏洩しても他人のデータにはアクセス不可。セキュリティはPostgreSQLレベルで強制。
-
-**仕組み**: 全テーブルに `auth.uid() = user_id` のRLSポリシーを設定。completionsとstreaksは親habitを経由したサブクエリで所有権を検証。
+APIキーが漏洩しても他人のデータにはアクセス不可。セキュリティはPostgreSQLレベルで強制。
 
 ```sql
 -- 直接所有権（habits, sync_queue）
-CREATE POLICY "Users can view own habits" ON habits 
+CREATE POLICY "Users can view own habits" ON habits
   FOR SELECT USING (auth.uid() = user_id);
 
 -- 間接所有権（completions → habit経由）
-CREATE POLICY "Users can view own completions" ON completions 
+CREATE POLICY "Users can view own completions" ON completions
   FOR SELECT USING (
     habit_id IN (SELECT id FROM habits WHERE user_id = auth.uid())
   );
 ```
 
----
-
 ### 3. Neo-Brutalistデザインシステム
 
-**成果**: Material/Cupertino系の量産UIと一線を画す、記憶に残るUI。テーマ切り替え時のフラッシュゼロでダークモード完全対応。
-
-**構築したコンポーネント**（計10個）:
+Material/Cupertino系の量産UIと一線を画す、記憶に残るUI。テーマ切り替え時のフラッシュゼロでダークモード完全対応。
 
 | コンポーネント | 用途 |
 |-------------|------|
@@ -126,33 +189,24 @@ CREATE POLICY "Users can view own completions" ON completions
 | `HatchPattern` | SVG斜線パターンの背景 |
 | `BrutalHabitCard` | ストリークリング付きの複合ハビットカード |
 
-**テーマシステム**: `useTheme()` フックがZustandの `settingsStore`（AsyncStorageで永続化）から読み取り、`useColorScheme()` でシステム設定に対応。各コンポーネントで `const { colors, isDark } = useTheme()` を展開 — Context Provider不要、不要な再レンダリングなし。
-
----
+**テーマシステム**: `useTheme()`がZustandの`settingsStore`（AsyncStorageで永続化）から読み取り、`useColorScheme()`でシステム設定に対応。Context Provider不要 — 不要な再レンダリングなし。
 
 ### 4. ストリーク追跡エンジン
 
-**成果**: 現在のストリーク、最長記録、達成率をリアルタイム表示。タップした瞬間に更新が反映される。
-
-**仕組み**: ストリーク計算はSQLiteに対してクライアントサイドで実行し、即座にフィードバック。完了トグル時の処理:
-
-1. `completions` テーブルにINSERT/DELETE
-2. 今日から遡って `completed_date` エントリを走査しストリーク再計算
-3. `streaks` テーブルを新しい値でUPDATE
-4. 両オペレーションをsync queueにエンキュー
+現在のストリーク、最長記録、達成率がタップした瞬間にリアルタイム更新。計算はSQLiteに対してクライアントサイドで実行し、即座にフィードバック。
 
 ---
 
 ## 技術スタック
 
-| カテゴリ | 技術 | 用途 |
-|---------|------|------|
+| カテゴリ | 技術 | 選定理由 |
+|---------|------|---------|
 | フレームワーク | React Native 0.81 | iOS + Android クロスプラットフォーム |
-| プラットフォーム | Expo SDK 54 | ビルドツール、OTAアップデート |
+| プラットフォーム | Expo SDK 54 | マネージドワークフロー、OTAアップデート |
 | ナビゲーション | Expo Router v6 | ファイルベースルーティング（型安全） |
-| 言語 | TypeScript (strict) | 47ソースファイル全体の型安全性 |
+| 言語 | TypeScript (strict) | 全ソースファイルの型安全性 |
 | 状態管理 | Zustand | セレクタベース再レンダリング、Provider不要 |
-| ローカルDB | expo-sqlite | 同期リード、オフライン永続化 |
+| ローカルDB | expo-sqlite | 同期リード、オフライン永続化、ACID |
 | バックエンド | Supabase | Auth、PostgreSQL、RLS |
 | デザイン | カスタム（Neo-Brutalist） | 手作り10コンポーネント、ダークモード |
 | フォント | Space Grotesk + Space Mono | ディスプレイ + モノスペースの組み合わせ |
@@ -162,129 +216,113 @@ CREATE POLICY "Users can view own completions" ON completions
 ## プロジェクト構成
 
 ```
-src/                          # 4,805行 / 47ファイル
-├── app/                      # Expo Router 画面
-│   ├── _layout.tsx           # ルートレイアウト + SyncManager
-│   ├── (auth)/               # サインイン / サインアップ
-│   ├── (tabs)/               # 4タブナビゲーション
-│   │   ├── index.tsx         # Today画面 + FAB
-│   │   ├── habits.tsx        # 習慣一覧
-│   │   ├── stats.tsx         # 統計 + カレンダー
-│   │   └── profile.tsx       # 設定 + テーマトグル
+src/
+├── app/                        # Expo Router 画面
+│   ├── _layout.tsx             # ルートレイアウト + SyncManager
+│   ├── (auth)/                 # サインイン / サインアップ
+│   ├── (tabs)/                 # 4タブナビゲーション
+│   │   ├── index.tsx           # Today画面 + FAB
+│   │   ├── habits.tsx          # 習慣一覧
+│   │   ├── stats.tsx           # 統計 + カレンダーヒートマップ
+│   │   └── profile.tsx         # 設定 + テーマトグル
 │   └── habit/
-│       ├── new.tsx           # 3ステップ作成ウィザード
-│       └── [id].tsx          # 詳細 + 月間カレンダー
+│       ├── new.tsx             # 3ステップ作成ウィザード
+│       └── [id].tsx            # 詳細 + 月間カレンダー
 ├── components/
-│   ├── brutal/               # デザインシステム（10コンポーネント）
-│   ├── habits/               # BrutalHabitCard, StreakRing
-│   └── common/               # LoadingSpinner
+│   ├── brutal/                 # デザインシステム（10コンポーネント）
+│   ├── habits/                 # BrutalHabitCard, StreakRing
+│   └── common/                 # LoadingSpinner, Toast
 ├── constants/
-│   ├── theme.ts              # パレット、トークン、useTheme()
-│   └── config.ts             # アプリ定数
-├── stores/                   # Zustand ストア（3つ）
-├── hooks/                    # useHabits, useStreak, useNotifications
+│   ├── theme.ts                # パレット、トークン、useTheme()
+│   └── config.ts               # アプリ定数 + バリデーション制限値
+├── stores/                     # Zustand ストア（auth, habit, settings, toast）
+├── hooks/                      # useHabits, useStreak, useSync, useNotifications
 ├── lib/
-│   ├── database.ts           # SQLite CRUD（619行）
-│   ├── sync.ts               # 同期パイプライン（244行）
-│   └── supabase.ts           # クライアント初期化
-└── types/index.ts            # TypeScript インターフェース
+│   ├── database.ts             # SQLite CRUD + マイグレーション
+│   ├── sync.ts                 # 同期パイプライン + コンフリクト解決
+│   ├── supabase.ts             # クライアント初期化
+│   └── errors.ts               # 型付きエラー階層
+├── types/index.ts              # TypeScript インターフェース
+└── dev/seed.ts                 # 開発用シードデータ
 ```
 
 ---
 
 ## データベース設計
 
-### ER図
-
 ```
-┌──────────┐       ┌──────────────┐       ┌──────────┐
-│  habits   │──1:N──│ completions  │       │ streaks  │
-│           │       │              │       │          │
-│ id (PK)   │       │ habit_id(FK) │       │habit_id  │
-│ user_id   │       │ completed_   │       │ (PK,FK)  │
-│ name      │       │   date       │       │ current_ │
-│ frequency │       │ note         │       │  streak  │
-│ icon      │       └──────────────┘       │ longest_ │
-│ color     │──1:1──────────────────────────│  streak  │
-│ version   │                              └──────────┘
-└──────────┘
-     │
-     │ (user_id)
-     ▼
-┌──────────────┐    ┌────────────────┐
-│  sync_queue  │    │ sync_conflicts │
-│              │    │                │
-│ table_name   │    │ local_data     │
-│ operation    │    │ remote_data    │
-│ data (JSONB) │    │ resolved       │
-│ retry_count  │    └────────────────┘
-└──────────────┘
+┌───────────┐        ┌──────────────┐        ┌───────────┐
+│  habits    │──1:N──│ completions   │        │  streaks   │
+│            │       │               │        │            │
+│ id (PK)    │       │ habit_id (FK) │        │ habit_id   │
+│ user_id    │       │ completed_date│        │  (PK, FK)  │
+│ name       │       │ note          │        │ current    │
+│ frequency  │       └───────────────┘        │ longest    │
+│ icon/color │──1:1───────────────────────────│ last_date  │
+│ version    │                                └────────────┘
+└────────────┘
+       │ (user_id)
+       ▼
+┌──────────────┐     ┌────────────────┐
+│  sync_queue   │     │ sync_conflicts  │
+│               │     │                 │
+│ table_name    │     │ local_data      │
+│ operation     │     │ remote_data     │
+│ data (JSONB)  │     │ resolved        │
+│ retry_count   │     └─────────────────┘
+└───────────────┘
 ```
-
-### スキーマ（TypeScript）
-
-```typescript
-interface Habit {
-  id: string;              // UUID, PK
-  user_id: string;         // FK → auth.users, RLSのアンカー
-  name: string;
-  icon: string;            // 絵文字
-  color: string;           // Hex
-  category: HabitCategory; // 'health' | 'exercise' | 'learning' | ...
-  frequency: 'daily' | 'weekly' | 'custom';
-  target_days: number[];   // [1,2,3,4,5] = 月〜金
-  reminder_time: string | null;
-  is_archived: boolean;
-  version: number;         // 楽観的ロック用
-  device_id: string | null;
-}
-
-interface Completion {
-  id: string;
-  habit_id: string;        // FK → habits
-  completed_date: string;  // YYYY-MM-DD, habit_idとのUNIQUE制約
-  note: string | null;
-}
-
-interface Streak {
-  habit_id: string;        // PK + FK → habits
-  current_streak: number;
-  longest_streak: number;
-  last_completed_date: string | null;
-}
-```
-
-### 設計判断の根拠
 
 | 判断 | 根拠 |
 |------|------|
-| `completions` に `UNIQUE(habit_id, completed_date)` | 同じ日の重複完了を防止 — 冪等な同期に不可欠 |
-| `streaks` を別テーブルに分離（計算値ではなく） | 読み取り毎の高コスト再計算を回避、書き込み時に更新 |
-| `sync_queue` に `JSONB data` を格納 | どのテーブルの変更でもスキーマ結合なしにキューイング可能 |
-| `habits` に `version` カラム | 将来のマルチデバイス対応に向けた楽観的ロック |
+| `UNIQUE(habit_id, completed_date)` | 同じ日の重複完了を防止 — 冪等な同期に不可欠 |
+| `streaks` を別テーブルに分離 | 読み取り毎の高コスト再計算を回避、書き込み時に更新 |
+| `sync_queue` に JSONB | どのテーブルの変更でもスキーマ結合なしにキューイング可能 |
+| `habits` に `version` | マルチデバイス対応に向けた楽観的ロック |
 | 全FKに `ON DELETE CASCADE` | ユーザー削除時に関連データを自動クリーンアップ |
 
 ---
 
-## セキュリティ設計
+<a id="security"></a>
 
-### 現在の実装
+## セキュリティ
+
+### 監査結果
+
+本コードベースに対してフルセキュリティ監査を実施。結果:
+
+| カテゴリ | 状態 | 詳細 |
+|---------|------|------|
+| ハードコードされた秘密鍵 / APIキー | **PASS** | 全認証情報は環境変数経由。`.env`はコミット履歴に一度も含まれていない |
+| SQLインジェクション | **PASS** | 全クエリでパラメータバインド変数（`?`）を使用 |
+| XSS | **N/A** | React Native の `Text` はHTMLを描画しない |
+| Row Level Security | **PASS** | 全5テーブルで `auth.uid() = user_id` をPostgreSQLレベルで強制 |
+| ID生成 | **PASS** | `crypto.getRandomValues()` で暗号学的に安全なUUIDを生成 |
+| 入力バリデーション | **PASS** | 全ユーザー入力に長さ制限（名前、メール、習慣名） |
+| パスワードポリシー | **PASS** | サインアップ時に最小8文字 + 大文字 + 数字を要求 |
+| デバッグログのサニタイズ | **PASS** | 開発ログでユーザーIDを切り詰め。本番ではPII出力なし |
+| Git履歴 | **PASS** | `.env`ファイルのコミット履歴なし。秘密情報は一切含まれない |
+| 依存パッケージの脆弱性 | **NOTE** | 開発依存のみ（jest/babel）。本番ビルドへの影響なし |
+
+### 脅威モデル
 
 | 脅威 | 対策 |
 |------|------|
 | 不正なデータアクセス | 全5テーブルにRLSポリシー — PostgreSQLレベルで強制 |
 | セッションハイジャック | Supabase AuthのJWTリフレッシュトークン、セッション有効期限 |
 | SQLインジェクション（ローカル） | expo-sqliteのバインド変数によるパラメータ化クエリ |
-| 接続不良時のデータ消失 | ローカルファーストSQLite + リトライ付き非同期sync queue |
+| 予測可能なID | `Math.random()`ではなく`crypto.getRandomValues()`を使用 |
+| 入力オーバーフロー | バリデーション制限: 名前100文字、説明500文字、メール254文字 |
+| 接続不良時のデータ消失 | ローカルファーストSQLite + 指数バックオフ付き非同期sync queue |
 
-### 本番強化計画（Production Hardening Plan）
+### 本番強化ロードマップ
 
 | 強化項目 | 状況 |
 |---------|------|
-| 認証エンドポイントのレート制限 | 計画中 — Supabase組み込みのレート制限を活用予定 |
-| メール認証フロー | 計画中 — Supabaseでサポート済み、未設定 |
-| 証明書ピンニング | 計画中 — プロダクションビルド時に実装 |
-| 生体認証ロック | 計画中 — expo-local-authenticationを使用予定 |
+| 認証エンドポイントのレート制限 | 計画中 — Supabase組み込み |
+| メール認証フロー | 計画中 — Supabaseでサポート済み |
+| 証明書ピンニング | 計画中 — プロダクションビルド用 |
+| 生体認証ロック | 計画中 — expo-local-authentication |
 
 ---
 
@@ -296,11 +334,28 @@ interface Streak {
 | **Zustand（Redux/Contextではなく）** | ボイラープレート70%削減、セレクタベース再レンダリング、Providerラッパー不要 |
 | **Supabase（Firebaseではなく）** | PostgreSQL（RLS、正規リレーショナルモデル）、オープンソース、予測可能な料金体系 |
 | **インラインスタイル（NativeWindではなく）** | Neo-Brutalistのデザイントークンを完全制御。NativeWindのユーティリティクラスが太ボーダー/シャドウパターンと競合 |
-| **useTheme() フック（Contextではなく）** | Zustandセレクタが `themeMode` のみを購読 — テーマ変更でツリー全体の再レンダリングを回避 |
-| **キューベース同期（リアルタイムではなく）** | ネットワーク断に対して耐性が高い。リアルタイム（WebSocket）は切断時にサイレント失敗する |
+| **useTheme() フック（Contextではなく）** | Zustandセレクタが`themeMode`のみを購読 — テーマ変更でツリー全体の再レンダリングを回避 |
+| **キューベース同期（リアルタイムではなく）** | ネットワーク断に対して耐性が高い。WebSocketは切断時にサイレント失敗する |
 
 ---
 
-## 作者
+## 環境変数
 
-Built by [mer-prog](https://github.com/mer-prog)
+| 変数 | 必須 | 説明 |
+|------|------|------|
+| `EXPO_PUBLIC_SUPABASE_URL` | いいえ | SupabaseプロジェクトURL（`https://<id>.supabase.co`） |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | いいえ | Supabase公開anonキー |
+
+> 両方とも任意。設定なしでもオフラインモードで全機能が利用可能。
+
+---
+
+## ライセンス
+
+[MIT](./LICENSE) — 自由に使用・改変・再配布可能。
+
+---
+
+<p align="center">
+  Built by <a href="https://github.com/mer-prog">mer-prog</a>
+</p>
