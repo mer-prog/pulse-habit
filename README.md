@@ -98,6 +98,7 @@ npx expo start
 | **Custom Design System** | 10-component Neo-Brutalist system built from scratch (no UI library). Heavy borders, offset shadows, monospace type. Full dark mode with Light/Dark/System toggle. |
 | **Sync Conflict Resolution** | Solved a real production bug where local SQLite user IDs diverged from Supabase auth UIDs. Built user_id rewriting in the sync pipeline so RLS policies pass correctly. |
 | **Security Hardening** | Cryptographic ID generation, input validation with length limits, debug log sanitization, PRAGMA injection prevention. Full audit documented below. |
+| **Internationalization (i18n)** | i18next + expo-localization for Japanese/English switching, device language auto-detection, bidirectional sync with Zustand persisted settings. |
 
 ---
 
@@ -191,6 +192,15 @@ A distinctive, memorable UI that stands out from generic Material/Cupertino apps
 
 Current streak, longest streak, and completion rate update the instant a user taps. Calculation runs client-side against SQLite for immediate feedback, then syncs to the cloud.
 
+### 5. Internationalization (i18n)
+
+Full Japanese/English language support with instant switching — no app restart needed.
+
+- **Device language auto-detection** via `expo-localization` on first launch (Japanese locale → `ja`, everything else → `en`)
+- **Manual switching** from the Settings screen with JP/EN toggle buttons (Neo-Brutalist styled)
+- **Bidirectional sync** between i18next and Zustand `settingsStore` (persisted to AsyncStorage)
+- **Locale-aware formatting** — dates, calendar weekday/month names, and relative streak text adapt to the selected language
+
 ---
 
 ## Tech Stack
@@ -205,6 +215,8 @@ Current streak, longest streak, and completion rate update the instant a user ta
 | Local DB | expo-sqlite | Synchronous reads, offline persistence, ACID |
 | Backend | Supabase | Auth, PostgreSQL, Row Level Security |
 | Design | Custom (Neo-Brutalist) | 10 hand-built components, dark mode |
+| i18n | i18next + react-i18next | Translation keys, interpolation, namespace separation |
+| Localization | expo-localization | Device language detection for default locale |
 | Fonts | Space Grotesk + Space Mono | Display + monospace pairing |
 
 ---
@@ -231,6 +243,9 @@ src/
 ├── constants/
 │   ├── theme.ts                # Palettes, tokens, useTheme()
 │   └── config.ts               # App constants + validation limits
+├── i18n/
+│   ├── index.ts                # i18next initialization + device language detection
+│   └── locales/                # Translation JSON files (ja.json, en.json)
 ├── stores/                     # Zustand stores (auth, habit, settings, toast)
 ├── hooks/                      # useHabits, useStreak, useSync, useNotifications
 ├── lib/
@@ -332,6 +347,7 @@ A full security audit was conducted on this codebase. Results:
 | **Inline styles over NativeWind** | Full control for Neo-Brutalist design tokens; NativeWind conflicted with heavy border/shadow patterns |
 | **useTheme() hook over Context** | Zustand selector subscribes only to `themeMode` — avoids re-rendering the entire tree |
 | **Queue-based sync over real-time** | Resilient to network interruptions; WebSocket fails silently on disconnect |
+| **i18next over expo-localization alone** | Translation key namespaces, interpolation (`{{count}} days`), pluralization support. expo-localization used only for locale detection |
 
 ---
 
