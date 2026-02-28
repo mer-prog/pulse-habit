@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View, Text } from 'react-native';
+import { useTranslation } from 'react-i18next';
 import { brutal, fontFamily, useTheme } from '@/constants/theme';
 
 function TabIcon({ icon, label, focused }: { icon: string; label: string; focused: boolean }) {
@@ -24,6 +25,7 @@ function TabIcon({ icon, label, focused }: { icon: string; label: string; focuse
 
 export default function TabsLayout() {
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Tabs
@@ -49,19 +51,19 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="◉" label="TODAY" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="◉" label={t('tabs.today')} focused={focused} /> }}
       />
       <Tabs.Screen
         name="habits"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="☰" label="HABITS" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="☰" label={t('tabs.habits')} focused={focused} /> }}
       />
       <Tabs.Screen
         name="stats"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="◔" label="STATS" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="◔" label={t('tabs.stats')} focused={focused} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="○" label="ME" focused={focused} /> }}
+        options={{ tabBarIcon: ({ focused }) => <TabIcon icon="○" label={t('tabs.me')} focused={focused} /> }}
       />
     </Tabs>
   );
