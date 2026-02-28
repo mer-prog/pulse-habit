@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { useTranslation } from 'react-i18next';
 import { useHabits } from '@/hooks/useHabits';
 import { BlackTag, BrutalTag } from '@/components/brutal';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
@@ -12,6 +13,7 @@ import { brutal, fontFamily, categoryColors, useTheme } from '@/constants/theme'
 export default function HabitsScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const { habits, isLoading, loadHabits } = useHabits();
 
   useEffect(() => { void loadHabits(); }, [loadHabits]);
@@ -28,13 +30,13 @@ export default function HabitsScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 16, marginBottom: 24 }}>
-          <Text style={{ fontSize: brutal.fontSize['5xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink, letterSpacing: -1.5 }}>HABITS</Text>
+          <Text style={{ fontSize: brutal.fontSize['5xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink, letterSpacing: -1.5 }}>{t('habits.title')}</Text>
           <Text style={{ fontSize: brutal.fontSize['5xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: brutal.accent }}>.</Text>
         </View>
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
-          <BlackTag>{`ALL (${habits.length})`}</BlackTag>
-          {categories.map((cat) => <BrutalTag key={cat} color={categoryColors[cat]}>{cat}</BrutalTag>)}
+          <BlackTag>{t('habits.all', { count: habits.length })}</BlackTag>
+          {categories.map((cat) => <BrutalTag key={cat} color={categoryColors[cat]}>{t(`categories.${cat}`)}</BrutalTag>)}
         </View>
 
         <View>
@@ -58,7 +60,7 @@ export default function HabitsScreen() {
                 <View style={{ flex: 1 }}>
                   <Text numberOfLines={1} style={{ fontSize: 16, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>{h.name}</Text>
                   <View style={{ flexDirection: 'row', gap: 6, marginTop: 3 }}>
-                    <BrutalTag color={catColor} small>{h.category}</BrutalTag>
+                    <BrutalTag color={catColor} small>{t(`categories.${h.category}`)}</BrutalTag>
                     {h.reminder_time && (
                       <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.monoRegular, color: colors.inkMuted }}>{h.reminder_time}</Text>
                     )}

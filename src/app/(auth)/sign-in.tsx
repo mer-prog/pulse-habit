@@ -3,6 +3,7 @@ import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } fro
 import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { useTranslation } from 'react-i18next';
 import { BrutalInput } from '@/components/brutal/BrutalInput';
 import { BrutalButton } from '@/components/brutal/BrutalButton';
 import { OffsetShadow } from '@/components/brutal/OffsetShadow';
@@ -15,6 +16,7 @@ import { MAX_EMAIL_LENGTH } from '@/constants/config';
 export default function SignInScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const setUser = useAuthStore((s) => s.setUser);
   const addToast = useToastStore((s) => s.addToast);
   const [email, setEmail] = useState('');
@@ -24,12 +26,10 @@ export default function SignInScreen() {
 
   const validate = (): boolean => {
     const newErrors: typeof errors = {};
-    if (!email.trim()) newErrors.email = 'Email is required';
-    else if (email.length > MAX_EMAIL_LENGTH) newErrors.email = 'Email is too long';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = 'Invalid email';
-    if (!password.trim()) newErrors.password = 'Password is required';
-    // Note: No min-length check on sign-in — existing users may have shorter passwords.
-    // Password strength is enforced at sign-up only.
+    if (!email.trim()) newErrors.email = t('auth.errors.emailRequired');
+    else if (email.length > MAX_EMAIL_LENGTH) newErrors.email = t('auth.errors.emailTooLong');
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) newErrors.email = t('auth.errors.emailInvalid');
+    if (!password.trim()) newErrors.password = t('auth.errors.passwordRequired');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -48,7 +48,7 @@ export default function SignInScreen() {
         setUser({ id: 'local', email, name: email.split('@')[0] ?? 'User', avatar_url: null });
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Sign in failed';
+      const message = error instanceof Error ? error.message : t('auth.errors.signInFailed');
       addToast('error', message);
     } finally {
       setLoading(false);
@@ -73,20 +73,20 @@ export default function SignInScreen() {
               <Text style={{ fontSize: 36, fontFamily: fontFamily.heading, fontWeight: '700', color: brutal.accent, letterSpacing: -1 }}>HABIT</Text>
             </View>
             <Text style={{ fontSize: brutal.fontSize.md, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 4 }}>
-              SMART HABIT & STREAK TRACKER
+              {t('auth.tagline')}
             </Text>
           </View>
 
-          <BrutalInput label="EMAIL" placeholder="you@example.com" value={email} onChange={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} error={errors.email} />
-          <BrutalInput label="PASSWORD" placeholder="••••••••" value={password} onChange={setPassword} secureTextEntry error={errors.password} />
+          <BrutalInput label={t('auth.email')} placeholder={t('auth.emailPlaceholder')} value={email} onChange={setEmail} keyboardType="email-address" autoCapitalize="none" autoCorrect={false} error={errors.email} />
+          <BrutalInput label={t('auth.password')} placeholder={t('auth.passwordPlaceholder')} value={password} onChange={setPassword} secureTextEntry error={errors.password} />
 
           <View style={{ marginTop: 4, marginBottom: 24 }}>
-            <BrutalButton title="SIGN IN →" onPress={handleSignIn} loading={loading} fullWidth size="lg" />
+            <BrutalButton title={t('auth.signIn')} onPress={handleSignIn} loading={loading} fullWidth size="lg" />
           </View>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <View style={{ flex: 1, height: 2, backgroundColor: colors.border }} />
-            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, textTransform: 'uppercase', letterSpacing: 1 }}>OR</Text>
+            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, textTransform: 'uppercase', letterSpacing: 1 }}>{t('common.or')}</Text>
             <View style={{ flex: 1, height: 2, backgroundColor: colors.border }} />
           </View>
 
@@ -101,9 +101,9 @@ export default function SignInScreen() {
           </View>
 
           <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-            <Text style={{ fontSize: 13, fontFamily: fontFamily.body, color: colors.inkMuted }}>No account? </Text>
+            <Text style={{ fontSize: 13, fontFamily: fontFamily.body, color: colors.inkMuted }}>{t('auth.noAccount')}</Text>
             <Pressable onPress={() => router.push('/(auth)/sign-up')}>
-              <Text style={{ fontSize: 13, fontFamily: fontFamily.heading, fontWeight: '700', color: brutal.accent, textDecorationLine: 'underline', textDecorationStyle: 'solid' }}>SIGN UP</Text>
+              <Text style={{ fontSize: 13, fontFamily: fontFamily.heading, fontWeight: '700', color: brutal.accent, textDecorationLine: 'underline', textDecorationStyle: 'solid' }}>{t('auth.signUp')}</Text>
             </Pressable>
           </View>
         </Animated.View>

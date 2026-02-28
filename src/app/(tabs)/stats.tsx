@@ -3,6 +3,7 @@ import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { useTranslation } from 'react-i18next';
 import { useHabitStore } from '@/stores/habitStore';
 import { BrutalCard, BlackTag, OffsetShadow, HatchPattern } from '@/components/brutal';
 import { brutal, fontFamily, categoryColors, useTheme } from '@/constants/theme';
@@ -12,6 +13,7 @@ type Period = 'week' | 'month' | 'year';
 
 export default function StatsScreen() {
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const habits = useHabitStore((s) => s.habits);
   const completions = useHabitStore((s) => s.completions);
   const streaks = useHabitStore((s) => s.streaks);
@@ -31,7 +33,7 @@ export default function StatsScreen() {
   }, [activeHabits, completions]);
 
   const barData = useMemo(() => {
-    const days = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
     const data: { day: string; value: number }[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date(); d.setDate(d.getDate() - i);
@@ -40,10 +42,11 @@ export default function StatsScreen() {
       for (const h of activeHabits) {
         if ((completions[h.id] ?? []).some((c) => c.completed_date === dateStr)) count++;
       }
-      data.push({ day: days[6 - i], value: Math.round((count / total) * 100) });
+      const dayKey = dayKeys[d.getDay()];
+      data.push({ day: t(`weekdaysShort.${dayKey}`), value: Math.round((count / total) * 100) });
     }
     return data;
-  }, [activeHabits, completions, total]);
+  }, [activeHabits, completions, total, t]);
 
   const heatmap = useMemo(() => {
     const cells: number[] = [];
@@ -76,7 +79,7 @@ export default function StatsScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 16, marginBottom: 24 }}>
-          <Text style={{ fontSize: brutal.fontSize['5xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink, letterSpacing: -1.5 }}>STATS</Text>
+          <Text style={{ fontSize: brutal.fontSize['5xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink, letterSpacing: -1.5 }}>{t('stats.title')}</Text>
           <Text style={{ fontSize: brutal.fontSize['5xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: brutal.accent }}>.</Text>
         </View>
 
@@ -97,7 +100,7 @@ export default function StatsScreen() {
                 fontSize: brutal.fontSize.md, fontFamily: fontFamily.mono, fontWeight: '700',
                 color: period === p ? colors.white : colors.ink,
                 textTransform: 'uppercase', letterSpacing: 1,
-              }}>{p}</Text>
+              }}>{t(`stats.${p}`)}</Text>
             </Pressable>
           ))}
         </View>
@@ -110,7 +113,7 @@ export default function StatsScreen() {
               <Text style={{ fontSize: brutal.fontSize['4xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: brutal.accent }}>%</Text>
             </View>
             <Text style={{ fontSize: brutal.fontSize.md, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, textTransform: 'uppercase', letterSpacing: 1.2, marginTop: 6 }}>
-              COMPLETION RATE TODAY
+              {t('stats.completionRate')}
             </Text>
           </View>
         </OffsetShadow>
@@ -119,7 +122,7 @@ export default function StatsScreen() {
         <OffsetShadow offset={brutal.shadowOffsetSm}>
           <View style={{ borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card, padding: 16, marginBottom: 16 }}>
             <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 12 }}>
-              DAILY COMPLETION %
+              {t('stats.dailyCompletion')}
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 6, height: 100 }}>
               {barData.map((d, i) => (
@@ -140,7 +143,7 @@ export default function StatsScreen() {
         <OffsetShadow offset={brutal.shadowOffsetSm}>
           <View style={{ borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card, padding: 14, marginBottom: 16 }}>
             <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-              28-DAY ACTIVITY
+              {t('stats.activity28')}
             </Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
               {heatmap.map((v, i) => (
@@ -157,7 +160,7 @@ export default function StatsScreen() {
               ))}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8, justifyContent: 'flex-end' }}>
-              <Text style={{ fontSize: 9, fontFamily: fontFamily.monoRegular, color: colors.inkMuted }}>LESS</Text>
+              <Text style={{ fontSize: 9, fontFamily: fontFamily.monoRegular, color: colors.inkMuted }}>{t('stats.less')}</Text>
               {[0, 1, 2, 3].map((v) => (
                 <View key={v} style={{
                   width: 12, height: 12, borderWidth: 1,
@@ -165,7 +168,7 @@ export default function StatsScreen() {
                   backgroundColor: v === 3 ? brutal.accent : v === 2 ? `${brutal.accent}60` : v === 1 ? `${brutal.accent}25` : colors.bgAlt,
                 }} />
               ))}
-              <Text style={{ fontSize: 9, fontFamily: fontFamily.monoRegular, color: colors.inkMuted }}>MORE</Text>
+              <Text style={{ fontSize: 9, fontFamily: fontFamily.monoRegular, color: colors.inkMuted }}>{t('stats.more')}</Text>
             </View>
           </View>
         </OffsetShadow>
@@ -175,7 +178,7 @@ export default function StatsScreen() {
           <OffsetShadow offset={brutal.shadowOffsetSm}>
             <View style={{ borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card, padding: 14 }}>
               <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 10 }}>
-                TOP STREAKS 🔥
+                {t('stats.topStreaks')} 🔥
               </Text>
               {topStreaks.map((s, i) => (
                 <View key={s.habit?.id ?? i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, borderTopWidth: i > 0 ? 1 : 0, borderTopColor: colors.borderLight, borderStyle: 'dashed' }}>

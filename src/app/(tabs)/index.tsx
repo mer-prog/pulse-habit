@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
 
+import { useTranslation } from 'react-i18next';
 import { useHabits } from '@/hooks/useHabits';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { BrutalProgress, StatBox, BlackTag } from '@/components/brutal';
@@ -14,6 +15,7 @@ import { brutal, fontFamily, useTheme } from '@/constants/theme';
 export default function TodayScreen() {
   const router = useRouter();
   const { colors } = useTheme();
+  const { t } = useTranslation();
   const {
     habits, isLoading, completedCount, totalCount, today, loadHabits, toggleCompletion,
   } = useHabits();
@@ -21,8 +23,9 @@ export default function TodayScreen() {
   useEffect(() => { void loadHabits(); }, [loadHabits]);
 
   const dayName = useMemo(() => {
-    return new Date().toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
-  }, [today]);
+    const dayIndex = new Date().getDay();
+    return t(`date.dayNames.${dayIndex}`).toUpperCase();
+  }, [today, t]);
 
   const bestStreak = useMemo(() => {
     let max = 0;
@@ -49,7 +52,7 @@ export default function TodayScreen() {
 
         <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 20 }}>
           <Text style={{ fontSize: brutal.fontSize['6xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink, lineHeight: 52, letterSpacing: -1.5 }}>
-            TODAY
+            {t('today.title')}
           </Text>
           <Text style={{ fontSize: brutal.fontSize['6xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: brutal.accent, lineHeight: 52 }}>.</Text>
         </View>
@@ -59,13 +62,13 @@ export default function TodayScreen() {
         </View>
 
         <View style={{ flexDirection: 'row', gap: 10, marginBottom: 24 }}>
-          <StatBox label="BEST STREAK" value={bestStreak} accent={brutal.accent} />
-          <StatBox label="TODAY" value={`${completedCount}/${totalCount}`} accent={brutal.indigo} />
-          <StatBox label="ACTIVE" value={totalCount} accent={brutal.success} />
+          <StatBox label={t('today.bestStreak')} value={bestStreak} accent={brutal.accent} />
+          <StatBox label={t('today.todayLabel')} value={`${completedCount}/${totalCount}`} accent={brutal.indigo} />
+          <StatBox label={t('today.active')} value={totalCount} accent={brutal.success} />
         </View>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          <BlackTag>{`HABITS — ${completedCount}/${totalCount}`}</BlackTag>
+          <BlackTag>{t('today.habitsCount', { done: completedCount, total: totalCount })}</BlackTag>
           <View style={{ flex: 1, height: 2, backgroundColor: colors.ink }} />
         </View>
 
@@ -81,8 +84,8 @@ export default function TodayScreen() {
         {habits.length === 0 && (
           <View style={{ borderWidth: 2, borderColor: colors.borderLight, borderStyle: 'dashed', padding: 32, alignItems: 'center', marginTop: 8 }}>
             <Text style={{ fontSize: 40, marginBottom: 12 }}>🎯</Text>
-            <Text style={{ fontSize: 16, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink, marginBottom: 4 }}>NO HABITS YET</Text>
-            <Text style={{ fontSize: 13, fontFamily: fontFamily.monoRegular, color: colors.inkMuted, textAlign: 'center' }}>Tap the + button to create your first habit</Text>
+            <Text style={{ fontSize: 16, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink, marginBottom: 4 }}>{t('today.noHabitsTitle')}</Text>
+            <Text style={{ fontSize: 13, fontFamily: fontFamily.monoRegular, color: colors.inkMuted, textAlign: 'center' }}>{t('today.noHabitsDesc')}</Text>
           </View>
         )}
       </Animated.ScrollView>

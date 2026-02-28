@@ -7,6 +7,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { StreakRing } from '@/components/habits/StreakRing';
 import { BrutalButton, BrutalInput, OffsetShadow, BrutalTag } from '@/components/brutal';
 import { brutal, fontFamily, useTheme, categoryColors } from '@/constants/theme';
@@ -22,7 +23,9 @@ function BrutalMonthlyCalendar({
   completedDates, month, year, color,
 }: { completedDates: Set<string>; month: number; year: number; color: string }) {
   const { colors } = useTheme();
-  const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const { t } = useTranslation();
+  const dayKeys = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
+  const DAY_LABELS = dayKeys.map((k) => t(`weekdaysShort.${k}`));
 
   const { weeks, monthLabel } = useMemo(() => {
     const firstDay = new Date(year, month, 1);
@@ -36,9 +39,10 @@ function BrutalMonthlyCalendar({
       if (currentWeek.length === 7) { weeks.push(currentWeek); currentWeek = []; }
     }
     if (currentWeek.length > 0) { while (currentWeek.length < 7) currentWeek.push(null); weeks.push(currentWeek); }
-    const monthLabel = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }).toUpperCase();
+    const monthName = t(`months.${month}`);
+    const monthLabel = t('date.monthYear', { monthName, year }).toUpperCase();
     return { weeks, monthLabel };
-  }, [month, year, completedDates]);
+  }, [month, year, completedDates, t]);
 
   const formatDate = (day: number): string => {
     const m = String(month + 1).padStart(2, '0');
@@ -86,6 +90,7 @@ export default function HabitDetailScreen() {
   const router = useRouter();
   const database = useSQLiteContext();
   const { colors, isDark } = useTheme();
+  const { t } = useTranslation();
   const habit = useHabitStore((s) => s.habits.find((h) => h.id === id));
   const EMPTY_COMPLETIONS: Completion[] = [];
   const completions = useHabitStore((s) => s.completions[id ?? '']) ?? EMPTY_COMPLETIONS;
@@ -109,10 +114,10 @@ export default function HabitDetailScreen() {
   const catDef = habit ? CATEGORY_MAP[habit.category] : null;
 
   const handleDelete = () => {
-    Alert.alert('Delete Habit', 'This action cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('habit.deleteHabit'), t('habit.deleteConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete', style: 'destructive',
+        text: t('common.delete'), style: 'destructive',
         onPress: async () => {
           await hapticWarning();
           if (id) { await db.deleteHabit(database, id); removeHabit(id); }
@@ -139,7 +144,7 @@ export default function HabitDetailScreen() {
   };
 
   if (!habit || !id) {
-    return <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.inkMuted, fontFamily: fontFamily.mono }}>Loading...</Text></View>;
+    return <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}><Text style={{ color: colors.inkMuted, fontFamily: fontFamily.mono }}>{t('common.loading')}</Text></View>;
   }
 
   return (
@@ -151,10 +156,10 @@ export default function HabitDetailScreen() {
         </Pressable>
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <Pressable onPress={() => setEditModalVisible(true)} style={{ paddingHorizontal: 12, paddingVertical: 6, borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card }}>
-            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.ink }}>EDIT</Text>
+            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.ink }}>{t('common.edit')}</Text>
           </Pressable>
           <Pressable onPress={handleDelete} style={{ paddingHorizontal: 12, paddingVertical: 6, borderWidth: 2, borderColor: brutal.rose, backgroundColor: isDark ? '#1A0808' : '#FFF5F5' }}>
-            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: brutal.rose }}>DELETE</Text>
+            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: brutal.rose }}>{t('common.delete')}</Text>
           </Pressable>
         </View>
       </View>
@@ -166,7 +171,7 @@ export default function HabitDetailScreen() {
           <Text style={{ fontSize: brutal.fontSize['2xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>{habit.name}</Text>
           {catDef && (
             <View style={{ marginTop: 8 }}>
-              <BrutalTag color={catDef.color}>{catDef.label.toUpperCase()}</BrutalTag>
+              <BrutalTag color={catDef.color}>{t(`categories.${catDef.key}`).toUpperCase()}</BrutalTag>
             </View>
           )}
         </View>
@@ -177,17 +182,17 @@ export default function HabitDetailScreen() {
             <StreakRing
               progress={streak.current_streak > 0 ? Math.min(streak.current_streak / 30, 1) : 0}
               size={160} strokeWidth={12} color={habit.color}
-              streakCount={streak.current_streak} label="day streak"
+              streakCount={streak.current_streak} label={t('today.dayStreak')}
             />
             <View style={{ flexDirection: 'row', marginTop: 16, width: '100%' }}>
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <Text style={{ fontSize: brutal.fontSize['2xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>{streak.current_streak}</Text>
-                <Text style={{ fontSize: brutal.fontSize.xs, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, letterSpacing: 1 }}>CURRENT</Text>
+                <Text style={{ fontSize: brutal.fontSize.xs, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, letterSpacing: 1 }}>{t('habit.current')}</Text>
               </View>
               <View style={{ width: 2, backgroundColor: colors.border }} />
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <Text style={{ fontSize: brutal.fontSize['2xl'], fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>{streak.longest_streak}</Text>
-                <Text style={{ fontSize: brutal.fontSize.xs, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, letterSpacing: 1 }}>LONGEST</Text>
+                <Text style={{ fontSize: brutal.fontSize.xs, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkMuted, letterSpacing: 1 }}>{t('habit.longestStreak')}</Text>
               </View>
             </View>
           </View>
@@ -204,7 +209,7 @@ export default function HabitDetailScreen() {
         {photosTimeline.length > 0 && (
           <OffsetShadow offset={brutal.shadowOffsetSm}>
             <View style={{ borderWidth: 2, borderColor: colors.border, backgroundColor: colors.card, padding: 14, marginBottom: 16 }}>
-              <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 10 }}>PHOTO TIMELINE</Text>
+              <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 10 }}>{t('habit.photoTimeline')}</Text>
               <FlatList
                 horizontal data={photosTimeline} keyExtractor={(item) => item.id}
                 showsHorizontalScrollIndicator={false}
@@ -219,22 +224,22 @@ export default function HabitDetailScreen() {
           </OffsetShadow>
         )}
 
-        <BrutalButton title="ADD PHOTO" onPress={handleAddPhoto} color={colors.ink} textColor={isDark ? colors.bg : colors.bg} fullWidth />
+        <BrutalButton title={t('habit.addPhoto')} onPress={handleAddPhoto} color={colors.ink} textColor={isDark ? colors.bg : colors.bg} fullWidth />
       </ScrollView>
 
       {/* Edit Modal */}
       <RNModal visible={editModalVisible} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setEditModalVisible(false)}>
         <View style={{ flex: 1, backgroundColor: colors.bg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 3, borderBottomColor: colors.border, paddingHorizontal: 16, paddingVertical: 14 }}>
-            <Text style={{ fontSize: brutal.fontSize.xl, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>EDIT HABIT</Text>
+            <Text style={{ fontSize: brutal.fontSize.xl, fontFamily: fontFamily.heading, fontWeight: '700', color: colors.ink }}>{t('habit.editHabit')}</Text>
             <Pressable onPress={() => setEditModalVisible(false)} hitSlop={8}>
               <Text style={{ fontSize: 22, color: colors.ink }}>✕</Text>
             </Pressable>
           </View>
           <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16 }}>
-            <BrutalInput label="NAME" value={editName} onChangeText={setEditName} placeholder="Habit name" />
+            <BrutalInput label={t('habit.nameLabel')} value={editName} onChangeText={setEditName} placeholder={t('habit.habitNameDefault')} />
 
-            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 8 }}>ICON</Text>
+            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 8 }}>{t('habit.icon')}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
               {HABIT_ICONS.map((ic) => (
                 <Pressable key={ic} onPress={() => setEditIcon(ic)} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: editIcon === ic ? brutal.accent : colors.border, backgroundColor: editIcon === ic ? (isDark ? '#2A1A0A' : '#FFF3E0') : colors.card }}>
@@ -243,7 +248,7 @@ export default function HabitDetailScreen() {
               ))}
             </View>
 
-            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 8 }}>COLOR</Text>
+            <Text style={{ fontSize: brutal.fontSize.sm, fontFamily: fontFamily.mono, fontWeight: '700', color: colors.inkSoft, letterSpacing: 1, marginBottom: 8 }}>{t('habit.color')}</Text>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
               {HABIT_COLORS.map((c) => (
                 <Pressable key={c} onPress={() => setEditColor(c)} style={{ width: 38, height: 38, backgroundColor: c, borderWidth: editColor === c ? 3 : 2, borderColor: editColor === c ? colors.ink : colors.border, alignItems: 'center', justifyContent: 'center' }}>
@@ -252,7 +257,7 @@ export default function HabitDetailScreen() {
               ))}
             </View>
 
-            <BrutalButton title="SAVE CHANGES" onPress={handleSaveEdit} fullWidth />
+            <BrutalButton title={t('habit.saveChanges')} onPress={handleSaveEdit} fullWidth />
           </ScrollView>
         </View>
       </RNModal>
