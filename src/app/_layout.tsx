@@ -19,13 +19,34 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 
 import { useAuthStore } from '@/stores/authStore';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { useSync } from '@/hooks/useSync';
 import { ToastContainer } from '@/components/common/Toast';
 import { migrateDatabase } from '@/lib/database';
 import { DB_NAME } from '@/constants/config';
 import { brutal, useTheme } from '@/constants/theme';
+import i18n, { getDeviceLanguage } from '@/i18n';
 
 SplashScreen.preventAutoHideAsync();
+
+function LanguageSync() {
+  const language = useSettingsStore((s) => s.language);
+  const setLanguage = useSettingsStore((s) => s.setLanguage);
+
+  useEffect(() => {
+    if (language === null) {
+      // First launch: detect device language and persist
+      const detected = getDeviceLanguage();
+      setLanguage(detected);
+      i18n.changeLanguage(detected);
+    } else {
+      // Subsequent launches: sync stored language to i18next
+      i18n.changeLanguage(language);
+    }
+  }, [language]);
+
+  return null;
+}
 
 function SyncManager() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -77,6 +98,7 @@ function AppContent() {
         <Stack.Screen name="habit/[id]" options={{ presentation: 'card' }} />
         <Stack.Screen name="habit/new" options={{ presentation: 'modal' }} />
       </Stack>
+      <LanguageSync />
       <SyncManager />
       <ToastContainer />
     </>
