@@ -73,6 +73,7 @@ export interface SyncQueueItem {
   retry_count: number;
   max_retries: number;
   created_at: string;
+  last_attempt_at: string | null; // ISO timestamp of the last failed attempt
 }
 
 export interface SyncConflict {

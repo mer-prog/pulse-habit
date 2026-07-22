@@ -28,16 +28,17 @@ export async function processSyncQueue(db: SQLiteDatabase): Promise<{
   failed: number;
   conflicts: number;
   purged: number;
+  skipped: number;
 }> {
   if (!isSupabaseConfigured()) {
-    return { processed: 0, failed: 0, conflicts: 0, purged: 0 };
+    return { processed: 0, failed: 0, conflicts: 0, purged: 0, skipped: 0 };
   }
 
   // Verify we have a valid Supabase auth session before attempting any sync
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     if (__DEV__) console.log('[Sync] No valid Supabase session yet, skipping sync');
-    return { processed: 0, failed: 0, conflicts: 0, purged: 0 };
+    return { processed: 0, failed: 0, conflicts: 0, purged: 0, skipped: 0 };
   }
   if (__DEV__) console.log('[Sync] Session verified, auth_uid:', session.user.id.slice(0, 8) + '...');
 
@@ -49,8 +50,16 @@ export async function processSyncQueue(db: SQLiteDatabase): Promise<{
   let processed = 0;
   let failed = 0;
   let conflicts = 0;
+  let skipped = 0;
 
+  const now = Date.now();
   for (const item of queue) {
+    // Exponential backoff: leave failed items in the queue until their
+    // retry delay has elapsed.
+    if (!isReadyForRetry(item, now)) {
+      skipped++;
+      continue;
+    }
     try {
       const result = await processQueueItem(db, item);
       if (result === 'success') {
@@ -67,7 +76,7 @@ export async function processSyncQueue(db: SQLiteDatabase): Promise<{
     }
   }
 
-  return { processed, failed, conflicts, purged };
+  return { processed, failed, conflicts, purged, skipped };
 }
 
 async function processQueueItem(
@@ -232,6 +241,17 @@ export function getBackoffDelay(retryCount: number): number {
   return baseDelay + jitter;
 }
 
+// An item that has failed retry_count times may be retried once the
+// backoff delay since its last attempt has elapsed. Fresh items are
+// always ready.
+export function isReadyForRetry(
+  item: Pick<SyncQueueItem, 'retry_count' | 'last_attempt_at'>,
+  now: number
+): boolean {
+  if (item.retry_count === 0 || !item.last_attempt_at) return true;
+  return now >= Date.parse(item.last_attempt_at) + getBackoffDelay(item.retry_count - 1);
+}
+
 function generateUUID(): string {
   const bytes = new Uint8Array(16);
   if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
@@ -246,4 +266,3 @@ function generateUUID(): string {
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 }
-

@@ -91,6 +91,12 @@ export async function migrateDatabase(db: SQLiteDatabase): Promise<void> {
     `);
   }
 
+  if (currentVersion < 2) {
+    // v2: record when an item last failed so exponential backoff can gate
+    // retries. Fresh installs pass through here too (v1 CREATE runs first).
+    await db.execAsync('ALTER TABLE sync_queue ADD COLUMN last_attempt_at TEXT');
+  }
+
   // DB_VERSION is a compile-time numeric constant from config — safe to interpolate.
   // SQLite PRAGMA does not support parameterized values.
   const version = Number(DB_VERSION);
@@ -416,60 +422,69 @@ export async function getAllStreaks(
   return rows.map(rowToStreak);
 }
 
+// Weekday numbers a habit is scheduled on (JS Date.getDay(): 0=Sun..6=Sat).
+// Daily habits — and habits without explicit target days — run every day.
+function getScheduledWeekdays(
+  schedule?: Pick<Habit, 'frequency' | 'target_days'>
+): Set<number> {
+  if (!schedule || schedule.frequency === 'daily' || schedule.target_days.length === 0) {
+    return new Set([0, 1, 2, 3, 4, 5, 6]);
+  }
+  return new Set(schedule.target_days);
+}
+
 export function calculateStreak(
   completions: Completion[],
-  today: string
+  today: string,
+  schedule?: Pick<Habit, 'frequency' | 'target_days'>
 ): { current: number; longest: number; lastDate: string | null } {
   if (completions.length === 0) {
     return { current: 0, longest: 0, lastDate: null };
   }
 
-  const dates = new Set(completions.map((c) => c.completed_date));
-  const sortedDates = [...dates].sort().reverse();
+  const allDates = [...new Set(completions.map((c) => c.completed_date))].sort().reverse();
+  const lastDate = allDates[0] ?? null;
+
+  const scheduledWeekdays = getScheduledWeekdays(schedule);
+  const isScheduled = (dateStr: string): boolean =>
+    scheduledWeekdays.has(parseDate(dateStr).getDay());
+
+  // Streaks are judged on scheduled days only: completions logged on
+  // off-days neither extend nor break a streak.
+  const dates = new Set(allDates.filter(isScheduled));
+  if (dates.size === 0) {
+    return { current: 0, longest: 0, lastDate };
+  }
+
+  // Latest scheduled day strictly before the given date.
+  // scheduledWeekdays is never empty, so this terminates within 7 steps.
+  const prevScheduledDay = (dateStr: string): string => {
+    let d = getDateString(addDays(parseDate(dateStr), -1));
+    while (!isScheduled(d)) {
+      d = getDateString(addDays(parseDate(d), -1));
+    }
+    return d;
+  };
+
+  // Current streak: anchor on today if it is a completed scheduled day,
+  // otherwise on the last scheduled day before today (an uncompleted
+  // today does not break the streak yet).
+  const anchor =
+    isScheduled(today) && dates.has(today) ? today : prevScheduledDay(today);
 
   let current = 0;
-  let longest = 0;
-  let tempStreak = 0;
-  let checkDate = today;
-
-  if (!dates.has(today)) {
-    const yesterday = getDateString(addDays(parseDate(today), -1));
-    if (!dates.has(yesterday)) {
-      const allSorted = [...dates].sort().reverse();
-      for (let i = 0; i < allSorted.length; i++) {
-        if (i === 0) {
-          tempStreak = 1;
-        } else {
-          const prev = parseDate(allSorted[i - 1]);
-          const curr = parseDate(allSorted[i]);
-          const diff = (prev.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24);
-          if (diff === 1) {
-            tempStreak++;
-          } else {
-            longest = Math.max(longest, tempStreak);
-            tempStreak = 1;
-          }
-        }
-      }
-      longest = Math.max(longest, tempStreak);
-      return { current: 0, longest, lastDate: sortedDates[0] ?? null };
-    }
-    checkDate = yesterday;
-  }
-
-  let d = checkDate;
+  let d = anchor;
   while (dates.has(d)) {
     current++;
-    d = getDateString(addDays(parseDate(d), -1));
+    d = prevScheduledDay(d);
   }
 
+  // Longest streak: runs of consecutive scheduled days across all history.
   const allSorted = [...dates].sort();
-  tempStreak = 1;
+  let longest = 0;
+  let tempStreak = 1;
   for (let i = 1; i < allSorted.length; i++) {
-    const prev = parseDate(allSorted[i - 1]);
-    const curr = parseDate(allSorted[i]);
-    const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-    if (diff === 1) {
+    if (prevScheduledDay(allSorted[i]) === allSorted[i - 1]) {
       tempStreak++;
     } else {
       longest = Math.max(longest, tempStreak);
@@ -478,7 +493,7 @@ export function calculateStreak(
   }
   longest = Math.max(longest, tempStreak, current);
 
-  return { current, longest, lastDate: sortedDates[0] ?? null };
+  return { current, longest, lastDate };
 }
 
 export async function updateStreak(
@@ -486,8 +501,9 @@ export async function updateStreak(
   habitId: string,
   today: string
 ): Promise<Streak> {
+  const habit = await getHabitById(db, habitId);
   const completions = await getCompletions(db, habitId);
-  const { current, longest, lastDate } = calculateStreak(completions, today);
+  const { current, longest, lastDate } = calculateStreak(completions, today, habit ?? undefined);
 
   await db.runAsync(
     `INSERT OR REPLACE INTO streaks (habit_id, current_streak, longest_streak, last_completed_date, updated_at)
@@ -525,7 +541,7 @@ export async function getSyncQueue(
 
 export async function addToSyncQueue(
   db: SQLiteDatabase,
-  item: Omit<import('@/types').SyncQueueItem, 'retry_count' | 'max_retries' | 'created_at'>
+  item: Omit<import('@/types').SyncQueueItem, 'retry_count' | 'max_retries' | 'created_at' | 'last_attempt_at'>
 ): Promise<void> {
   await db.runAsync(
     'INSERT INTO sync_queue (id, table_name, operation, data) VALUES (?, ?, ?, ?)',
@@ -538,8 +554,8 @@ export async function incrementSyncRetry(
   id: string
 ): Promise<void> {
   await db.runAsync(
-    'UPDATE sync_queue SET retry_count = retry_count + 1 WHERE id = ?',
-    [id]
+    'UPDATE sync_queue SET retry_count = retry_count + 1, last_attempt_at = ? WHERE id = ?',
+    [new Date().toISOString(), id]
   );
 }
 
@@ -626,5 +642,3 @@ export async function purgeExpiredSyncItems(
   );
   return result.changes;
 }
-
-

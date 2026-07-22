@@ -1,7 +1,7 @@
 export const APP_NAME = 'PulseHabit';
 export const APP_VERSION = '1.0.0';
 export const DB_NAME = 'pulsehabit.db';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 export const SYNC_MAX_RETRIES = 5;
 export const SYNC_BACKOFF_BASE_MS = 1000;
