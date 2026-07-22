@@ -17,7 +17,7 @@
 | **同期コンフリクト解決** | ローカルSQLiteのuser_idとSupabase認証のUIDが乖離する本番バグを解決。同期パイプラインでuser_idを書き換え、RLSポリシーが正常に機能するよう修正。habitsテーブルではversionベースの楽観的ロックによるコンフリクト検出を実装。 |
 | **セキュリティ設計** | `crypto.getRandomValues()`による暗号学的ID生成、パラメータ化クエリ（`?`バインド変数）によるSQLインジェクション防止、入力値バリデーション（名前100文字、説明500文字、メール254文字）、開発ログでのユーザーID切り詰め表示。 |
 | **国際化（i18n）** | i18next＋react-i18next＋expo-localizationで日本語・英語切替を実装。初回起動時にデバイス言語を自動検出し、Zustandの`settingsStore`（AsyncStorage永続化）と双方向同期。アプリ再起動なしの即時切替対応。 |
-| **ストリーク計算エンジン** | completionsテーブルから現在のストリーク・最長ストリーク・達成率をクライアントサイドで計算。タップ即座に更新し、SQLiteに保存後クラウドへ同期。日付の連続性チェック、昨日・今日の境界処理を実装。 |
+| **ストリーク計算エンジン** | completionsテーブルから現在のストリーク・最長ストリーク・達成率をクライアントサイドで計算。習慣の頻度設定（daily / weekly / customのtarget_days）を尊重し、スケジュール日のみで連続性を判定。タップ即座に更新し、SQLiteに保存後クラウドへ同期。昨日・今日の境界処理を実装。 |
 | **触覚フィードバック** | expo-hapticsによる7種のフィードバック（Success、Warning、Error、Light、Medium、Heavy、Selection）を操作に応じて使い分け。習慣完了時はSuccess、削除時はWarning。 |
 | **通知リマインダー** | expo-notificationsによる日次リマインダー通知。習慣ごとに設定可能な時刻指定（HH:MM形式）、通知タップで習慣詳細画面へ遷移。 |
 
@@ -168,11 +168,11 @@ UIライブラリ（Material UI、NativeWind等）を使わず、10種のカス�
 
 `src/lib/database.ts`の`calculateStreak()`関数で実装:
 
-1. completionsから日付のSetを構築
-2. 今日が含まれない場合、昨日からチェック開始（ストリーク維持判定）
-3. 連続日数をカウントしてcurrent_streakを算出
-4. 全日付をソートして最長連続日数（longest_streak）を算出
-5. streaksテーブルにINSERT OR REPLACEで保存
+1. 習慣の頻度設定からスケジュール曜日のSetを構築（daily=毎日、weekly/custom=target_daysの曜日のみ）
+2. completionsからスケジュール日の完了日付Setを構築（オフ日の完了はストリークを増やしも壊しもしない）
+3. 今日が未完了・非スケジュール日の場合、直前のスケジュール日からチェック開始（ストリーク維持判定）
+4. スケジュール日ベースの連続数をカウントしてcurrent_streakを算出
+5. 全スケジュール完了日をソートして最長連続数（longest_streak）を算出し、streaksテーブルにINSERT OR REPLACEで保存
 6. sync_queueにエンキュー
 
 ### 4.5 国際化（i18n）
