@@ -17,7 +17,7 @@
 | **Sync Conflict Resolution** | Solved a production bug where local SQLite user_ids diverged from Supabase auth UIDs. The sync pipeline rewrites user_id before upload so RLS policies pass correctly. Version-based optimistic locking for conflict detection on the habits table. |
 | **Security Hardening** | Cryptographic ID generation via `crypto.getRandomValues()`, parameterized queries (`?` bind variables) to prevent SQL injection, input validation (name 100 chars, description 500 chars, email 254 chars), debug log sanitization with truncated user IDs. |
 | **Internationalization (i18n)** | Japanese/English switching via i18next + react-i18next + expo-localization. Device language auto-detection on first launch, bidirectional sync with Zustand's `settingsStore` (AsyncStorage persistence). Instant switching without app restart. |
-| **Streak Calculation Engine** | Client-side computation of current streak, longest streak, and completion rate from the completions table. Updates instantly on tap, writes to SQLite, then syncs to cloud. Handles today/yesterday boundary edge cases. |
+| **Streak Calculation Engine** | Client-side computation of current streak, longest streak, and completion rate from the completions table. Respects the habit's frequency (daily / weekly / custom target_days): continuity is judged on scheduled days only. Updates instantly on tap, writes to SQLite, then syncs to cloud. Handles today/yesterday boundary edge cases. |
 | **Haptic Feedback** | Seven types of haptic feedback via expo-haptics (Success, Warning, Error, Light, Medium, Heavy, Selection) applied contextually. Habit completion triggers Success; deletion triggers Warning. |
 | **Notification Reminders** | Daily reminders via expo-notifications. Per-habit configurable reminder time (HH:MM format), notification tap navigates to habit detail screen. |
 
@@ -168,11 +168,11 @@ Built 10 custom components without any UI library (no Material UI, NativeWind, e
 
 Implemented in the `calculateStreak()` function in `src/lib/database.ts`:
 
-1. Build a Set of dates from completions
-2. If today is not included, start checking from yesterday (streak continuity check)
-3. Count consecutive days to compute current_streak
-4. Sort all dates and find the longest consecutive run (longest_streak)
-5. Write to streaks table via INSERT OR REPLACE
+1. Build a Set of scheduled weekdays from the habit's frequency (daily = every day, weekly/custom = target_days only)
+2. Build a Set of completion dates that fall on scheduled days (off-day completions neither extend nor break a streak)
+3. If today is uncompleted or not scheduled, start checking from the last scheduled day (streak continuity check)
+4. Count consecutive scheduled days to compute current_streak
+5. Sort all scheduled completion dates, find the longest consecutive run (longest_streak), and write to the streaks table via INSERT OR REPLACE
 6. Enqueue to sync_queue
 
 ### 4.5 Internationalization (i18n)
